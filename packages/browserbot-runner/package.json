@@ -1,0 +1,39 @@
+{
+  "name": "@browserbot/runner",
+  "version": "0.0.1",
+  "description": "",
+  "author": "",
+  "private": true,
+  "license": "UNLICENSED",
+  "scripts": {
+    "build": "node esbuild --prod",
+    "start": "node esbuild -w",
+    "runner": "node dist/index",
+    "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
+    "test": "jest"
+  },
+  "dependencies": {
+    "aws-sdk": "^2.1201.0",
+    "@aws-sdk/client-ses": "^3.154.0",
+    "@browserbot/model": "file:..\\browserbot-model",
+    "@browserbot/backend-shared": "link:..\\browserbot-backend-shared",
+    "@fastify/multipart": "^7.1.0",
+    "dayjs": "^1.11.5",
+    "dotenv": "^16.0.1",
+    "fastify": "^4.5.2",
+    "js-sha512": "^0.8.0",
+    "jsonwebtoken": "^8.5.1",
+    "postgres": "^3.2.4",
+    "fflate": "^0.7.3"
+  },
+  "devDependencies": {
+    "@types/jest": "27.5.0",
+    "@types/node": "^16.11.56",
+    "esbuild": "^0.15.5",
+    "jest": "28.0.3",
+    "prettier": "^2.7.1",
+    "ts-jest": "28.0.1",
+    "ts-loader": "^9.3.1",
+    "typescript": "^4.7.4"
+  }
+}
