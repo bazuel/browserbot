@@ -1,0 +1,46 @@
+@import 'node_modules/@butopen/design-system/src/index';
+//@import "fonts";
+
+body {
+  background: none;
+  margin: 0;
+  width: 350px;
+}
+
+:root {
+  --bb-primary-color: #4e4595;
+  --bb-secondary-color: #ff6262;
+  --bo-theme-color: var(--bb-primary-color);
+}
+
+.main-color {
+  color: var(--bo-primary-color);
+}
+
+.bkg {
+  background: linear-gradient(
+    90deg,
+    var(--bb-secondary-color) -90%,
+    var(--bb-primary-color) 40%,
+    var(--bb-primary-color) 100%
+  );
+}
+
+.bb-glow {
+  text-shadow: 0 0 20px var(--bb-secondary-color);
+}
+
+.font-important {
+  font-family: 'Roboto Condensed', sans-serif;
+}
+
+.logo {
+  @apply font-important bb-glow text-white;
+}
+
+.cta {
+  @apply inline-flex flex-1 rounded-lg bg-gradient-to-br from-bbs to-pink-600
+  p-2 text-xl font-bold text-white opacity-100 shadow shadow-bbp
+  hover:to-pink-500 hover:shadow-bbp active:scale-95 active:shadow-gray-800;
+  text-shadow: 1px 1px 8px rgba(255, 255, 255, .3);
+}

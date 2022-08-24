@@ -1,0 +1,46 @@
+<html>
+<head>
+    <link rel="stylesheet" href="assets/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300;0,400;0,800;1,400&family=Roboto+Condensed:wght@300;700&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="bkg p-4">
+    <div class="text-center">
+        <a class="logo" href="https://browserbot.io" target="_blank">
+            <span class="font-thin text-2xl">Browser</span><span class="font-extrabold text-2xl">Bot</span>
+        </a>
+    </div>
+    
+    <div class="text-white mt-4">
+        How to create a BrowserBot:
+        <ol class="list-decimal ml-8">
+            <li>Press the <b class="text-sm">START RECORDING</b> button</li>
+            <li>Browse the page with a <b>use case</b> (login, register, ...)</li>
+            <li>Re-open this popup and <b>create your BOT</b></li>
+        </ol>
+        
+    </div>
+    
+    <div class="mt-6 flex justify-center items-center flex-col">
+        <img class="h-48" src="assets/img/start-recording.png" />
+        <button id="start-recording" class="cta">START RECORDING</button>
+    </div>
+    
+    
+    <div class="text-white mt-4 text-xs">
+        And then?
+        <ul class="list-disc ml-8">
+            <li>Was a <b>test</b>? A Bot can check it works at each release</li>
+            <li>Was a <b>bug</b>? Share as a video with your team</li>
+        </ul>
+        
+    </div>
+    
+    <div id="hmr" style="opacity: 0">reload v1.0</div>
+</div>
+
+<script src="/popup.js"></script>
+</body>
+</html>

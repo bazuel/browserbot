@@ -1,0 +1,48 @@
+{
+  "name": "BrowserBot",
+  "description": "Create a Browser Bot and release your webapp with confidence and without errors",
+  "version": "1.0",
+  "manifest_version": 3,
+  "permissions": [
+    "downloads",
+    "storage",
+    "activeTab",
+    "scripting",
+    "webRequest",
+    "tabs",
+    "management",
+    "webNavigation"
+  ],
+  "host_permissions": ["<all_urls>"],
+  "background": {
+    "service_worker": "chrome/background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "/assets/icon-16.png",
+      "32": "/assets/icon-32.png",
+      "48": "/assets/icon-48.png",
+      "128": "/assets/icon-128.png"
+    }
+  },
+  "icons": {
+    "16": "/assets/icon-16.png",
+    "32": "/assets/icon-32.png",
+    "48": "/assets/icon-48.png",
+    "128": "/assets/icon-128.png"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["page/monitor.js"],
+      "matches": ["<all_urls>"]
+    }
+  ],
+  "content_scripts": [
+    {
+      "matches": ["http://*/*", "https://*/*"],
+      "js": ["chrome/monitor-embedder.js"],
+      "run_at": "document_start"
+    }
+  ]
+}
