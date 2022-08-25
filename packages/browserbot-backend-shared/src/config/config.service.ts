@@ -1,19 +1,25 @@
-//import {DBConfig} from "../db/postgres-db.service";
+// import {DBConfig} from "../db/postgres-db.service";
+
+import * as process from "process";
 
 export interface EmailConfiguration {
-  region: string
-  api_version: string
+  region: string;
+  api_version: string;
   aws: {
-    access_key_id: string
-    secret_access_key: string
-  }
-  default_from: string
-
+    access_key_id: string;
+    secret_access_key: string;
+  };
+  default_from: string;
 }
 
 export interface Config {
-  //db: DBConfig;
-  storage: { endpoint: string; accessKey: string; secretKey: string, bucket:string };
+  db: any;
+  storage: {
+    endpoint: string;
+    accessKey: string;
+    secretKey: string;
+    bucket: string;
+  };
   email: EmailConfiguration;
   master_password: string;
   backend_url: string;
@@ -22,7 +28,7 @@ export interface Config {
 function initGlobalConfig() {
   const {
     DB_HOST,
-    DB_USRENAME,
+    DB_USERNAME,
     DB_PASSWORD,
     DB_NAME,
     DB_PORT,
@@ -38,13 +44,13 @@ function initGlobalConfig() {
     S3_SECRET_KEY,
     S3_ACCESS_KEY,
     S3_ENDPOINT,
-    S3_BUCKET
+    S3_BUCKET,
   } = process.env;
 
   return {
     db: {
       host: DB_HOST,
-      user: DB_USRENAME,
+      user: DB_USERNAME,
       password: DB_PASSWORD,
       database: DB_NAME,
       port: +DB_PORT,
@@ -52,7 +58,7 @@ function initGlobalConfig() {
     master_password: SSO_MASTER_PASSWORD,
     backend_url: SSO_BACKEND_URL,
     app_url: APP_URL,
-    color: SSO_DEFAULT_COLOR || '#29ffad',
+    color: SSO_DEFAULT_COLOR || "#29ffad",
     email: {
       aws: {
         access_key_id: SSO_EMAIL_AWS_ACCESS_KEY_ID,
@@ -74,8 +80,13 @@ function initGlobalConfig() {
 export const globalConfig = initGlobalConfig();
 
 export class ConfigService implements Config {
-  //db: DBConfig;
-  storage: { endpoint: string; accessKey: string; secretKey: string, bucket:string };
+  db: any;
+  storage: {
+    endpoint: string;
+    accessKey: string;
+    secretKey: string;
+    bucket: string;
+  };
   email: EmailConfiguration;
   master_password: string;
   backend_url: string;
@@ -85,7 +96,7 @@ export class ConfigService implements Config {
   constructor() {
     const gc = initGlobalConfig();
     for (let k in gc) globalConfig[k] = gc[k];
-    //this.db = globalConfig.db as DBConfig;
+    this.db = globalConfig.db as any;
     this.master_password = globalConfig.master_password;
     this.backend_url = globalConfig.backend_url;
     this.app_url = globalConfig.app_url;

@@ -10,12 +10,10 @@ import {
   BBScrollAction,
   BBWaitAction
 } from '../old/browserbot-actions.model';
-import { Browser, chromium, Page } from '@playwright/test';
+import { Browser, chromium, Page } from 'playwright';
 import { ConfigService, StorageService } from '@browserbot/backend-shared';
 
-const configService = new ConfigService();
-const storageService = new StorageService(configService);
-
+const storageService = new StorageService(new ConfigService());
 declare global {
   interface Window {
     blSerializer: any;
@@ -73,10 +71,10 @@ export class Runner {
   }
 
   private async runAction(a: BBAction) {
-    //execute action inside browserPage
-    await this.mapAction[a.action](a);
-    const buffer = await this.page.screenshot();
-    await storageService.upload(buffer, `${this.uploadPath}-${a.action}`);
+    //await this.mapAction[a.action](a);
+    console.log(a);
+    //const buffer = await this.page.screenshot();
+    //await storageService.upload(buffer, `${this.uploadPath}-${a.action}`);
   }
 
   private async setupContext(jsonEvents) {

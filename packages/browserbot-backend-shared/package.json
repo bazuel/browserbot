@@ -9,7 +9,8 @@
   },
   "dependencies": {
     "aws-sdk": "^2.1201.0",
-    "postgres": "^3.2.4"
+    "postgres": "^3.2.4",
+    "dotenv": "^16.0.1"
   },
   "devDependencies": {
     "@types/node": "^18.7.13",
