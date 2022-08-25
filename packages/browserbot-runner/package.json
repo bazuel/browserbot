@@ -24,7 +24,8 @@
     "js-sha512": "^0.8.0",
     "jsonwebtoken": "^8.5.1",
     "postgres": "^3.2.4",
-    "fflate": "^0.7.3"
+    "fflate": "^0.7.3",
+    "@playwright/test": "^1.25.1"
   },
   "devDependencies": {
     "@types/jest": "27.5.0",

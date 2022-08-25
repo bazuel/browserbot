@@ -5,6 +5,7 @@ specifiers:
   '@browserbot/backend-shared': link:..\browserbot-backend-shared
   '@browserbot/model': file:..\browserbot-model
   '@fastify/multipart': ^7.1.0
+  '@playwright/test': ^1.25.1
   '@types/jest': 27.5.0
   '@types/node': ^16.11.56
   aws-sdk: ^2.1201.0
@@ -27,6 +28,7 @@ dependencies:
   '@browserbot/backend-shared': link:../browserbot-backend-shared
   '@browserbot/model': file:../browserbot-model
   '@fastify/multipart': 7.1.0
+  '@playwright/test': 1.25.1
   aws-sdk: 2.1201.0
   dayjs: 1.11.5
   dotenv: 16.0.1
@@ -1028,7 +1030,7 @@ packages:
     resolution: {integrity: sha512-m2nzzQJeuVmeGOB9rnII9sZiY8AZ02a9WMQfMBfK1jxdFnxm3FPYKGbYpPjODj4halNogwpolyugbTNpnDCi0A==}
     dependencies:
       ajv: 8.11.0
-      ajv-formats: 2.1.1_ajv@8.11.0
+      ajv-formats: 2.1.1
       fast-uri: 2.1.0
     dev: false
 
@@ -1341,6 +1343,15 @@ packages:
       '@jridgewell/sourcemap-codec': 1.4.14
     dev: true
 
+  /@playwright/test/1.25.1:
+    resolution: {integrity: sha512-IJ4X0yOakXtwkhbnNzKkaIgXe6df7u3H3FnuhI9Jqh+CdO0e/lYQlDLYiyI9cnXK8E7UAppAWP+VqAv6VX7HQg==}
+    engines: {node: '>=14'}
+    hasBin: true
+    dependencies:
+      '@types/node': 16.11.56
+      playwright-core: 1.25.1
+    dev: false
+
   /@sinclair/typebox/0.24.28:
     resolution: {integrity: sha512-dgJd3HLOkLmz4Bw50eZx/zJwtBq65nms3N9VBYu5LTjJ883oBFkTyXRlCB/ZGGwqYpJJHA5zW2Ibhl5ngITfow==}
     dev: true
@@ -1439,7 +1450,6 @@ packages:
 
   /@types/node/16.11.56:
     resolution: {integrity: sha512-aFcUkv7EddxxOa/9f74DINReQ/celqH8DiB3fRYgVDM2Xm5QJL8sl80QKuAnGvwAsMn+H3IFA6WCrQh1CY7m1A==}
-    dev: true
 
   /@types/prettier/2.7.0:
     resolution: {integrity: sha512-RI1L7N4JnW5gQw2spvL7Sllfuf1SaHdrZpCHiBlCXjIlufi1SMNnbu2teze3/QE67Fg2tBlH7W+mi4hVNk4p0A==}
@@ -1598,10 +1608,8 @@ packages:
     hasBin: true
     dev: true
 
-  /ajv-formats/2.1.1_ajv@8.11.0:
+  /ajv-formats/2.1.1:
     resolution: {integrity: sha512-Wx0Kx52hxE7C18hkMEggYlEifqWZtYaRgouJor+WMdPnQyEK13vgEWyVNup7SoeeoLMsr4kf5h6dOW11I15MUA==}
-    peerDependencies:
-      ajv: ^8.0.0
     peerDependenciesMeta:
       ajv:
         optional: true
@@ -2434,7 +2442,7 @@ packages:
     dependencies:
       '@fastify/deepmerge': 1.1.0
       ajv: 8.11.0
-      ajv-formats: 2.1.1_ajv@8.11.0
+      ajv-formats: 2.1.1
       fast-uri: 2.1.0
       rfdc: 1.3.0
     dev: false
@@ -3705,6 +3713,12 @@ packages:
     dependencies:
       find-up: 4.1.0
     dev: true
+
+  /playwright-core/1.25.1:
+    resolution: {integrity: sha512-lSvPCmA2n7LawD2Hw7gSCLScZ+vYRkhU8xH0AapMyzwN+ojoDqhkH/KIEUxwNu2PjPoE/fcE0wLAksdOhJ2O5g==}
+    engines: {node: '>=14'}
+    hasBin: true
+    dev: false
 
   /postgres/3.2.4:
     resolution: {integrity: sha512-iscysD+ZlM4A9zj0RS2zo3f4Us4yuov94Yx+p3dE1rEARaBHC8R3/gRq40KEnWp1lxjuFq9EjuAenIUsPaTaDA==}
