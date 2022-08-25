@@ -1,4 +1,4 @@
-import {DBConfig} from "../db/postgres-db.service";
+//import {DBConfig} from "../db/postgres-db.service";
 
 export interface EmailConfiguration {
   region: string
@@ -12,7 +12,7 @@ export interface EmailConfiguration {
 }
 
 export interface Config {
-  db: DBConfig;
+  //db: DBConfig;
   storage: { endpoint: string; accessKey: string; secretKey: string, bucket:string };
   email: EmailConfiguration;
   master_password: string;
@@ -74,7 +74,7 @@ function initGlobalConfig() {
 export const globalConfig = initGlobalConfig();
 
 export class ConfigService implements Config {
-  db: DBConfig;
+  //db: DBConfig;
   storage: { endpoint: string; accessKey: string; secretKey: string, bucket:string };
   email: EmailConfiguration;
   master_password: string;
@@ -85,7 +85,7 @@ export class ConfigService implements Config {
   constructor() {
     const gc = initGlobalConfig();
     for (let k in gc) globalConfig[k] = gc[k];
-    this.db = globalConfig.db as DBConfig;
+    //this.db = globalConfig.db as DBConfig;
     this.master_password = globalConfig.master_password;
     this.backend_url = globalConfig.backend_url;
     this.app_url = globalConfig.app_url;
