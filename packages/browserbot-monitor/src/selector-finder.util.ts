@@ -43,12 +43,12 @@ function nthChild(element: Element) {
 
 function attributes(
   element: Element,
-  attributesToIgnore = ["id", "class", "length"]
+  attributesWhiteList = ["name", " value", "title", "for", "type"]
 ) {
   const attributesSelector: string[] = [];
   const { attributes } = element;
   for (let a of Array.from(attributes)) {
-    if (!(attributesToIgnore.indexOf(a.nodeName.toLowerCase()) > -1)) {
+    if (attributesWhiteList.indexOf(a.nodeName.toLowerCase()) > -1) {
       attributesSelector.push(
         `[${a.nodeName.toLowerCase()}${a.value ? `="${a.value}"` : ""}]`
       );
