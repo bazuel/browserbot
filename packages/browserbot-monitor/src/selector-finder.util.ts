@@ -62,7 +62,7 @@ function attributes(
  * @param element
  */
 function flatSelector(element: Element) {
-  return tag(element) + id(element) + classes(element) + attributes(element);
+  return tag(element) + id(element) + attributes(element);
 }
 
 function classes(element: Element) {
