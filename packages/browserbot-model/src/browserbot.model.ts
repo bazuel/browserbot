@@ -54,11 +54,17 @@ export interface BBAction {
     | "goto"
     | "referrer"
     | "resize"
-    | "device";
+    | "device"
+    | "input";
 }
 
 export interface BBDeviceInformationAction extends BBAction {
   userAgent: string;
+}
+
+export interface BBInputAction extends BBAction {
+  targetSelector: string;
+  value: string;
 }
 
 export interface BBGotoAction extends BBAction {

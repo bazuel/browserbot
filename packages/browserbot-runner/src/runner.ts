@@ -4,6 +4,7 @@ import {
   BBAction,
   BBDeviceInformationAction,
   BBGotoAction,
+  BBInputAction,
   BBMouseMoveAction,
   BBReferrerAction,
   BBResizeAction,
@@ -29,23 +30,6 @@ export class Runner {
   serializerScript: string;
   uploadPath: string;
 
-  // mapAction = {
-  //   mousemove: this.executeMouseMove,
-  //   mousedown: this.executeMouseDown,
-  //   mouseup: this.executeMouseUp,
-  //   scroll: this.executeScroll,
-  //   wait: this.executeWait,
-  //   resize: this.executeResize,
-  //   referrer: (a) => console.log('non gestito'),
-  //   'after-response': (a) => console.log('non gestito'),
-  //   address: (a) => console.log('non gestito'),
-  //   'local-full': (a) => console.log('non gestito'),
-  //   'session-full': (a) => console.log('non gestito'),
-  //   input: (a) => console.log('non gestito'),
-  //   value: (a) => console.log('non gestito'),
-  //   visibility: (a) => console.log('non gestito')
-  // };
-
   constructor() {
     this.serializerScript = fs.readFileSync('./scripts/index.serializer.js', 'utf8');
     this.useragent =
@@ -69,16 +53,15 @@ export class Runner {
         for (let action of jsonEvents) {
           await this.runAction(action);
         }
-
-        // await this.concludeActions();
-        await this.browser.close();
+        await this.injectSerializerScript();
+        // await this.browser.close();
       }
     });
   }
 
   private async runAction(a: BBAction) {
     console.log(a);
-    // await this.mapAction[a.name](a, this);
+    await this.page.waitForTimeout(1000);
     if (a.name === 'referrer') {
       await this.executeReferrer(a);
     } else if (a.name === 'mousemove') {
@@ -93,6 +76,8 @@ export class Runner {
       await this.executeWait(a);
     } else if (a.name === 'resize') {
       await this.executeResize(a);
+    } else if (a.name === 'input') {
+      await this.executeInput(a as BBInputAction);
     } else {
       console.log(a.name, ': non gestito');
     }
@@ -149,7 +134,6 @@ export class Runner {
 
   private async executeMouseMove(a: BBAction) {
     let mm = a as BBMouseMoveAction;
-    // await this.page.waitForTimeout(100);
     await this.page.mouse.move(mm.x, mm.y);
   }
 
@@ -190,7 +174,7 @@ export class Runner {
     });
   }
 
-  private async concludeActions() {
+  private async injectSerializerScript() {
     await this.page.evaluate((serializerScript) => {
       const s = document.createElement('script');
       s.textContent = serializerScript;
@@ -200,5 +184,20 @@ export class Runner {
     const domJson = await this.page.evaluate(() => {
       return new window.blSerializer.ElementSerializer().serialize(document);
     });
+  }
+
+  private async executeInput(a: BBInputAction) {
+    /*
+    let selector = a.targetSelector.split('.')[0];
+    let selectorTypes: string[] = a.targetSelector
+      .split('[')
+      .filter((t) => t.includes('type') || t.includes('name'))
+      .map((s) => s.split('"')[0]);
+    let selectorTypesValue: string[] = a.targetSelector
+      .split('[')
+      .filter((t) => t.includes('type') || t.includes('name'))
+      .map((s) => s.split('"')[1]);
+    let resultSelector = selectorTypes;*/
+    await this.page.keyboard.insertText(a.value);
   }
 }
