@@ -182,6 +182,14 @@ export class Runner {
     await this.page.setViewportSize(this.viewport);
   }
 
+  private async executeReferrer(a: BBAction) {
+    let r = a as BBReferrerAction;
+    await this.page.goto(r.url, {
+      referer: this.referrer,
+      waitUntil: 'domcontentloaded'
+    });
+  }
+
   private async concludeActions() {
     await this.page.evaluate((serializerScript) => {
       const s = document.createElement('script');

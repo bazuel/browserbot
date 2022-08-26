@@ -13,7 +13,7 @@ const server: FastifyInstance = Fastify({});
 const runner = new Runner();
 
 server.get('/api/events', async (request, reply) => {
-  const path = `sessions/staging.agentesmith.com/dashboard_@bb@_home/2022/08/24/1661346969648-716.zip`;
+  const path: string = `sessions/staging.agentesmith.com/dashboard_@bb@_home/2022/08/24/1661346969648-716.zip`;
   // if(req.path) run session
   await runner.runSession(path);
   return { ok: 'true' };
