@@ -15,7 +15,7 @@
   "dependencies": {
     "aws-sdk": "^2.1201.0",
     "@aws-sdk/client-ses": "^3.154.0",
-    "@browserbot/model": "file:..\\browserbot-model",
+    "@browserbot/model": "link:..\\browserbot-model",
     "@browserbot/backend-shared": "link:..\\browserbot-backend-shared",
     "@fastify/multipart": "^7.1.0",
     "dayjs": "^1.11.5",
@@ -25,7 +25,8 @@
     "jsonwebtoken": "^8.5.1",
     "postgres": "^3.2.4",
     "fflate": "^0.7.3",
-    "playwright": "^1.25.1"
+    "playwright": "^1.25.1",
+    "@playwright/test": "^1.25.1"
   },
   "devDependencies": {
     "@types/jest": "27.5.0",

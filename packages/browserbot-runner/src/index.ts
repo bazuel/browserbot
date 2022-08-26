@@ -6,7 +6,7 @@ require('dotenv').config();
 const version = '1.0.2';
 
 process.on('uncaughtException', function (err) {
-  console.log('main.ts - Uncaught exception: ', err);
+  console.log('index.ts - Uncaught exception: ', err);
 });
 
 const server: FastifyInstance = Fastify({});
