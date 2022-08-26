@@ -19,7 +19,7 @@ export const BBRoleLabels: { [role in BBRole]: string } = {
 };
 export const BBRoleLabelsArray: { role: BBRole; label: string }[] = [];
 for (const r in BBRoleLabels)
-  BBRoleLabelsArray.push({ role: r as BBRole, label: BBRoleLabels[r] });
+  BBRoleLabelsArray.push({role: r as BBRole, label: BBRoleLabels[r]});
 
 export interface BBTeam {
   teamid?: string;
@@ -55,7 +55,10 @@ export interface BBAction {
     | "referrer"
     | "resize"
     | "device"
-    | "input";
+    | "keyup"
+    | "keydown"
+    | "input"
+  timestamp: number
 }
 
 export interface BBDeviceInformationAction extends BBAction {
@@ -67,14 +70,23 @@ export interface BBInputAction extends BBAction {
   value: string;
 }
 
+export interface BBKeydownAction extends BBAction {
+  targetSelector: string;
+  key: string;
+}
+
 export interface BBGotoAction extends BBAction {
   url: string;
+}
+
+export interface BBKeyupAction extends BBAction {
+  targetSelector: string;
+  key: string;
 }
 
 export interface BBMouseMoveAction extends BBAction {
   x: number;
   y: number;
-  moves: { x: number; y: number; at: number }[];
 }
 
 export interface BBScrollAction extends BBAction {

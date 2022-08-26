@@ -1,4 +1,4 @@
-import { strFromU8, unzip } from 'fflate';
+import {strFromU8, unzip} from 'fflate';
 import fs from 'fs';
 import {
   BBAction,
@@ -11,8 +11,8 @@ import {
   BBScrollAction,
   BBWaitAction
 } from '@browserbot/model';
-import { Browser, chromium, Page } from 'playwright';
-import { ConfigService, StorageService } from '@browserbot/backend-shared';
+import {Browser, chromium, Page} from 'playwright';
+import {ConfigService, StorageService} from '@browserbot/backend-shared';
 
 const storageService = new StorageService(new ConfigService());
 declare global {
@@ -29,61 +29,73 @@ export class Runner {
   referrer: string;
   serializerScript: string;
   uploadPath: string;
+  private lastAction: BBAction;
+  private takeScreenshot: boolean;
+  private speed: number = 1;
+  private actionWhitelist = ["mousemove", "scroll", "mouseup", "mousedown", "wait", "goto", "referrer", "resize", "device", "input"]
+  private nextAction: BBAction;
 
   constructor() {
     this.serializerScript = fs.readFileSync('./scripts/index.serializer.js', 'utf8');
     this.useragent =
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.88 Safari/537.36';
-    this.viewport = { width: 1280, height: 619 };
+    this.viewport = {width: 1280, height: 619};
     this.referrer = 'https://www.google.com/';
   }
 
   async runSession(path: string) {
     this.uploadPath = path.replace('.zip', '');
     const actionsZip = await storageService.read(path);
-    this.browser = await chromium.launch({ channel: 'chrome', headless: false });
+    this.browser = await chromium.launch({channel: 'chrome', headless: false});
 
     unzip(new Uint8Array(actionsZip), async (err, data) => {
       for (let f in data) {
         const raw = strFromU8(data[f]);
-        const jsonEvents: BBAction[] = JSON.parse(raw);
+        let jsonEvents: BBAction[] = JSON.parse(raw);
 
         this.page = await (await this.setupContext(jsonEvents)).newPage();
         await this.goto(jsonEvents);
-        for (let action of jsonEvents) {
-          await this.runAction(action);
+        jsonEvents = jsonEvents.filter(e => this.actionWhitelist.includes(e.name))
+        for (let i = 0; i < jsonEvents.length; i++) {
+          this.lastAction = jsonEvents[i - 1]
+          this.nextAction = jsonEvents[i + 1]
+          await this.runAction(jsonEvents[i]);
         }
         await this.injectSerializerScript();
-        // await this.browser.close();
+        await this.browser.close().then(_ => console.log("session-ended gracefully"));
       }
     });
   }
 
-  private async runAction(a: BBAction) {
-    console.log(a);
-    await this.page.waitForTimeout(1000);
-    if (a.name === 'referrer') {
-      await this.executeReferrer(a);
-    } else if (a.name === 'mousemove') {
-      await this.executeMouseMove(a);
-    } else if (a.name === 'mousedown') {
-      await this.executeMouseDown(a);
-    } else if (a.name === 'mouseup') {
-      await this.executeMouseUp(a);
-    } else if (a.name === 'scroll') {
-      await this.executeScroll(a);
-    } else if (a.name === 'wait') {
-      await this.executeWait(a);
-    } else if (a.name === 'resize') {
-      await this.executeResize(a);
-    } else if (a.name === 'input') {
-      await this.executeInput(a as BBInputAction);
+  private async runAction(action: BBAction) {
+
+    if (this.lastAction) await this.page.waitForTimeout((action.timestamp - this.lastAction.timestamp) * this.speed);
+    if (action.name === 'referrer') {
+      await this.executeReferrer(action);
+    } else if (action.name === 'mousemove') {
+      await this.executeMouseMove(action);
+    } else if (action.name === 'mousedown') {
+      await this.executeMouseDown(action);
+    } else if (action.name === 'mouseup') {
+      await this.executeMouseUp(action);
+    } else if (action.name === 'scroll') {
+      await this.executeScroll(action);
+    } else if (action.name === 'wait') {
+      await this.executeWait(action);
+    } else if (action.name === 'resize') {
+      await this.executeResize(action);
+    } else if (action.name === 'input') {
+      await this.executeInput(action as BBInputAction);
     } else {
-      console.log(a.name, ': non gestito');
+      console.log(action.name, ': non gestito');
     }
 
-    //const buffer = await this.page.screenshot();
-    //await storageService.upload(buffer, `${this.uploadPath}-${a.name}`);
+    this.takeScreenshot = !(action.name == 'mousemove' && this.nextAction?.name == 'mousemove')
+    if (this.takeScreenshot) {
+      console.log("screenshot")
+      /*const buffer = await this.page.screenshot();
+      await storageService.upload(buffer, `${this.uploadPath}/${action.name}/${action.timestamp}`);*/
+    }
   }
 
   private async setupContext(jsonEvents) {
@@ -127,7 +139,8 @@ export class Runner {
         if (this.browser) {
           await this.browser.close();
         }
-      } catch (e) {}
+      } catch (e) {
+      }
       throw new Error('goto action not found');
     }
   }
@@ -147,7 +160,7 @@ export class Runner {
 
   private async executeScroll(a: BBAction) {
     let s = a as BBScrollAction;
-    let coordinates = { x: s.x, y: s.y };
+    let coordinates = {x: s.x, y: s.y};
     await this.page.evaluate(
       (coordinates) => window.scroll(coordinates.x, coordinates.y),
       coordinates
@@ -174,18 +187,6 @@ export class Runner {
     });
   }
 
-  private async injectSerializerScript() {
-    await this.page.evaluate((serializerScript) => {
-      const s = document.createElement('script');
-      s.textContent = serializerScript;
-      document.head.appendChild(s);
-    }, this.serializerScript);
-
-    const domJson = await this.page.evaluate(() => {
-      return new window.blSerializer.ElementSerializer().serialize(document);
-    });
-  }
-
   private async executeInput(a: BBInputAction) {
     /*
     let selector = a.targetSelector.split('.')[0];
@@ -198,6 +199,18 @@ export class Runner {
       .filter((t) => t.includes('type') || t.includes('name'))
       .map((s) => s.split('"')[1]);
     let resultSelector = selectorTypes;*/
-    await this.page.keyboard.insertText(a.value);
+    await this.page.fill(a.targetSelector, a.value)
+  }
+
+  private async injectSerializerScript() {
+    await this.page.evaluate((serializerScript) => {
+      const s = document.createElement('script');
+      s.textContent = serializerScript;
+      document.head.appendChild(s);
+    }, this.serializerScript);
+
+    const domJson = await this.page.evaluate(() => {
+      return new window.blSerializer.ElementSerializer().serialize(document);
+    });
   }
 }
