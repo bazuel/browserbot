@@ -94,7 +94,9 @@ export type BLEventName =
   | "session-start"
   | "user-email"
   | "user-start"
-  | "user-stop";
+  | "user-stop"
+  | "storage"
+  | "device";
 
 export interface BLEvent {
   name: BLEventName;
