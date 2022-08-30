@@ -74,7 +74,7 @@ function classes(element: Element) {
       // return only the valid CSS selectors based on RegEx
       classSelectorList = classList.filter((item) =>
         !/^[a-z_-][a-z\d_-]*$/i.test(item) ? null : item
-      );
+      ).filter(item => !item.includes('ng'))
     } catch (e) {
       let className = element.getAttribute("class") ?? "";
       // remove duplicate and leading/trailing whitespaces
