@@ -219,6 +219,16 @@ export class Runner {
     console.log(await this.page.evaluate(() => JSON.stringify(localStorage)))
   }
 
+  private async executeElementScroll(action: BLScrollEvent & { targetSelector: string }) {
+    await this.page.evaluate((action) => {
+      console.log(document.querySelectorAll(action.targetSelector))
+      let selectedElement = document.querySelectorAll(action.targetSelector)[0]
+      selectedElement.scroll(action.x, action.y)
+      return selectedElement
+    },action)
+    this.takeScreenshot = true;
+  }
+
   private async injectSerializerScript() {
     await this.page.evaluate((serializerScript) => {
       const s = document.createElement('script');
