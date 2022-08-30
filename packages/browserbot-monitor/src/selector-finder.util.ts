@@ -15,8 +15,9 @@ export class ElementSelectorFinder {
     let selector = flatSelector(element) + nthChild(element);
     let foundElements = element.ownerDocument.querySelectorAll(selector);
     while (foundElements.length > 1 && element.parentElement) {
+      element = element.parentElement
       let parentSelector =
-        flatSelector(element.parentElement) + nthChild(element.parentElement);
+        flatSelector( element) + nthChild(element);
       selector = `${parentSelector} > ${selector}`;
       foundElements = element.ownerDocument.querySelectorAll(selector);
     }
@@ -62,7 +63,7 @@ function attributes(
  * @param element
  */
 function flatSelector(element: Element) {
-  return tag(element) + id(element) + attributes(element);
+  return tag(element) + id(element) + attributes(element) + classes(element);
 }
 
 function classes(element: Element) {
