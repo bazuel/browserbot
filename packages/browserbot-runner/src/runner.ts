@@ -1,18 +1,16 @@
 import {strFromU8, unzip} from 'fflate';
 import fs from 'fs';
-import {
-  BBAction,
-  BBDeviceInformationAction,
-  BBGotoAction,
-  BBInputAction,
-  BBMouseMoveAction,
-  BBReferrerAction,
-  BBResizeAction,
-  BBScrollAction,
-  BBWaitAction
-} from '@browserbot/model';
 import {Browser, chromium, Page} from 'playwright';
 import {ConfigService, StorageService} from '@browserbot/backend-shared';
+import {
+  BLEvent,
+  BLHTTPResponseEvent,
+  BLInputChangeEvent,
+  BLMouseEvent,
+  BLPageReferrerEvent,
+  BLScrollEvent, BLStorageEvent,
+  BLWindowResizeEvent
+} from "@browserbot/monitor/src/events";
 
 const storageService = new StorageService(new ConfigService());
 declare global {
@@ -29,11 +27,11 @@ export class Runner {
   referrer: string;
   serializerScript: string;
   uploadPath: string;
-  private lastAction: BBAction;
+  private lastAction: BLEvent;
   private takeScreenshot: boolean;
   private speed: number = 1;
-  private actionWhitelist = ["mousemove", "scroll", "mouseup", "mousedown", "wait", "goto", "referrer", "resize", "device", "input"]
-  private nextAction: BBAction;
+  private actionWhitelist = ["elementscroll", "mousemove", "scroll", "mouseup", "mousedown", "wait", "goto", "referrer", "resize", "device", "input", "after-response"]
+  private nextAction: BLEvent;
 
   constructor() {
     this.serializerScript = fs.readFileSync('./scripts/index.serializer.js', 'utf8');
@@ -51,69 +49,70 @@ export class Runner {
     unzip(new Uint8Array(actionsZip), async (err, data) => {
       for (let f in data) {
         const raw = strFromU8(data[f]);
-        let jsonEvents: BBAction[] = JSON.parse(raw);
+        let jsonEvents: BLEvent[] = JSON.parse(raw);
 
         this.page = await (await this.setupContext(jsonEvents)).newPage();
-        await this.goto(jsonEvents);
+        await this.setInitialPage(jsonEvents);
         jsonEvents = jsonEvents.filter(e => this.actionWhitelist.includes(e.name))
         for (let i = 0; i < jsonEvents.length; i++) {
+          this.takeScreenshot = false
           this.lastAction = jsonEvents[i - 1]
           this.nextAction = jsonEvents[i + 1]
           await this.runAction(jsonEvents[i]);
         }
-        await this.injectSerializerScript();
+        //await this.injectSerializerScript();
         await this.browser.close().then(_ => console.log("session-ended gracefully"));
       }
     });
   }
 
-  private async runAction(action: BBAction) {
-
-    if (this.lastAction) await this.page.waitForTimeout((action.timestamp - this.lastAction.timestamp) * this.speed);
-    if (action.name === 'referrer') {
-      await this.executeReferrer(action);
+  private async runAction(action: BLEvent) {
+    console.log(action)
+    if (this.lastAction) await this.page.waitForTimeout(
+      (action.timestamp - this.lastAction.timestamp) * this.speed);
+    if (action.name === 'input') {
+      await this.executeInput(action as BLInputChangeEvent & { targetSelector, value });
     } else if (action.name === 'mousemove') {
-      await this.executeMouseMove(action);
+      await this.executeMouseMove(action as BLMouseEvent);
     } else if (action.name === 'mousedown') {
-      await this.executeMouseDown(action);
+      await this.executeMouseDown();
     } else if (action.name === 'mouseup') {
-      await this.executeMouseUp(action);
+      await this.executeMouseUp();
     } else if (action.name === 'scroll') {
-      await this.executeScroll(action);
-    } else if (action.name === 'wait') {
-      await this.executeWait(action);
+      await this.executeScroll(action as BLScrollEvent);
     } else if (action.name === 'resize') {
-      await this.executeResize(action);
-    } else if (action.name === 'input') {
-      await this.executeInput(action as BBInputAction);
-    } else {
-      console.log(action.name, ': non gestito');
+      await this.executeResize(action as BLWindowResizeEvent);
+    } else if (action.name === 'referrer') {
+      //await this.executeReferrer(action as BLPageReferrerEvent & {url});
+    } else if (action.name === 'after-response') {
+      //console.log(await this.executeRequest(action as BLHTTPResponseEvent))
+    } else if (action.name === 'storage') {
+      //await this.setStorage(action)
+    } else if (action.name === 'elementscroll') {
+      await this.executeElementScroll(action as BLScrollEvent & { targetSelector });
     }
-
-    this.takeScreenshot = !(action.name == 'mousemove' && this.nextAction?.name == 'mousemove')
     if (this.takeScreenshot) {
-      console.log("screenshot")
       /*const buffer = await this.page.screenshot();
       await storageService.upload(buffer, `${this.uploadPath}/${action.name}/${action.timestamp}`);*/
     }
+
   }
 
-  private async setupContext(jsonEvents) {
-    if (jsonEvents.filter((a: BBAction) => a.name === 'resize')[0]) {
+  private async setupContext(jsonEvents: BLEvent[]) {
+    let resizeAction = jsonEvents.filter((a) => a.name === 'resize')[0] as BLWindowResizeEvent
+    let deviceAction = jsonEvents.filter((a) => a.name === 'device')[0] as BLEvent & { userAgent }
+    let referrerAction = jsonEvents.filter((a) => a.name === 'referrer')[0] as BLPageReferrerEvent
+    if (resizeAction) {
       this.viewport = {
-        width: (jsonEvents.filter((a) => a.name === 'resize')[0] as BBResizeAction).width,
-        height: (jsonEvents.filter((a) => a.name === 'resize')[0] as BBResizeAction).height
+        width: resizeAction.width,
+        height: resizeAction.height
       };
     }
-    if (jsonEvents.filter((a) => a.name === 'device')[0]) {
-      this.useragent = (
-        jsonEvents.filter((a) => a.name === 'device')[0] as BBDeviceInformationAction
-      ).userAgent;
+    if (deviceAction) {
+      this.useragent = deviceAction.userAgent;
     }
-    if (jsonEvents.filter((a) => a.name === 'referrer')[0]) {
-      this.referrer = (
-        jsonEvents.filter((a) => a.name === 'referrer')[0] as BBReferrerAction
-      ).referrer;
+    if (referrerAction) {
+      this.referrer = referrerAction.referrer;
     }
     return await this.browser.newContext({
       viewport: this.viewport,
@@ -121,14 +120,10 @@ export class Runner {
     });
   }
 
-  private async goto(jsonEvents) {
+  private async setInitialPage(jsonEvents) {
     try {
       await this.page.goto(
-        (
-          jsonEvents.filter((a) => a.name === 'goto' || a.name === 'referrer')[0] as
-            | BBReferrerAction
-            | BBGotoAction
-        ).url,
+        (jsonEvents.filter((a) => a.name === 'referrer')[0] as BLPageReferrerEvent & { url }).url,
         {
           referer: this.referrer,
           waitUntil: 'domcontentloaded'
@@ -145,61 +140,83 @@ export class Runner {
     }
   }
 
-  private async executeMouseMove(a: BBAction) {
-    let mm = a as BBMouseMoveAction;
-    await this.page.mouse.move(mm.x, mm.y);
+  private async executeMouseMove(a: BLMouseEvent) {
+    await this.page.mouse.move(a.x, a.y);
+    this.takeScreenshot = this.nextAction?.name != 'mousemove'
   }
 
-  private async executeMouseDown(a: BBAction) {
+  private async executeMouseDown() {
     await this.page.mouse.down();
+    this.takeScreenshot = false
   }
 
-  private async executeMouseUp(a: BBAction) {
+  private async executeMouseUp() {
     await this.page.mouse.up();
+    this.takeScreenshot = true
   }
 
-  private async executeScroll(a: BBAction) {
-    let s = a as BBScrollAction;
-    let coordinates = {x: s.x, y: s.y};
+  private async executeScroll(a: BLScrollEvent) {
+    let coordinates = {x: a.x, y: a.y};
     await this.page.evaluate(
       (coordinates) => window.scroll(coordinates.x, coordinates.y),
       coordinates
     );
   }
 
-  private async executeWait(a: BBAction) {
-    await this.page.waitForTimeout((a as BBWaitAction).timeout);
-  }
-
-  private async executeResize(a: BBAction) {
+  private async executeResize(a: BLWindowResizeEvent) {
     this.viewport = {
-      width: (a as BBResizeAction).width,
-      height: (a as BBResizeAction).height
+      width: a.width,
+      height: a.height
     };
     await this.page.setViewportSize(this.viewport);
+    this.takeScreenshot = true
   }
 
-  private async executeReferrer(a: BBAction) {
-    let r = a as BBReferrerAction;
-    await this.page.goto(r.url, {
-      referer: this.referrer,
+  private async executeInput(a: BLInputChangeEvent & { targetSelector, value }) {
+    await this.page.fill(a.targetSelector, a.value)
+    this.takeScreenshot = this.nextAction?.name != 'input'
+  }
+
+  private async executeReferrer(a: BLPageReferrerEvent & { url }) {
+    await this.page.goto(a.url, {
       waitUntil: 'domcontentloaded'
     });
+    this.takeScreenshot = true
   }
 
-  private async executeInput(a: BBInputAction) {
-    /*
-    let selector = a.targetSelector.split('.')[0];
-    let selectorTypes: string[] = a.targetSelector
-      .split('[')
-      .filter((t) => t.includes('type') || t.includes('name'))
-      .map((s) => s.split('"')[0]);
-    let selectorTypesValue: string[] = a.targetSelector
-      .split('[')
-      .filter((t) => t.includes('type') || t.includes('name'))
-      .map((s) => s.split('"')[1]);
-    let resultSelector = selectorTypes;*/
-    await this.page.fill(a.targetSelector, a.value)
+  async executeRequest(action: BLHTTPResponseEvent) {
+    let requestContext = this.page.request
+    let request = action.request
+    let headers = {}
+    Object.keys(action.request.headers).forEach(h => headers[h] = action.request.headers[h][0])
+    if (action.request.method == 'GET') {
+      return await requestContext.get(request.url, {
+        headers: headers
+      })
+    } else if (action.request.method == 'POST') {
+      return await requestContext.post(request.url, {
+        data: request.body,
+        headers: headers
+      })
+      /*} else if (action.request.method == 'DELETE') {
+        console.log(action.request.method + "not handled")
+      } else if (action.request.method == 'PUT') {
+        console.log(action.request.method + "not handled")
+      } else if (action.request.method == 'FETCH') {
+        console.log(action.request.method + "not handled")
+      } else {
+        console.log(action.request.method + "not handled")*/
+    }
+  }
+
+
+  private async setStorage(action: BLStorageEvent) {
+    let storage = action.storage
+    for (const name of Object.keys(storage)) {
+      let value = storage[name]
+      await this.page.evaluate(() => localStorage.setItem(name, value))
+    }
+    console.log(await this.page.evaluate(() => JSON.stringify(localStorage)))
   }
 
   private async injectSerializerScript() {
