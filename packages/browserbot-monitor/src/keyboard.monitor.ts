@@ -12,7 +12,8 @@ export class KeyboardMonitor implements BLMonitor {
             key: e.key,
             code: e.code,
             locale: (e as any).locale,
-            modifier: e.ctrlKey ? 'ctrl' : e.altKey ? 'alt' : e.shiftKey ? 'shift' : 'none'
+            modifier: e.ctrlKey ? 'ctrl' : e.altKey ? 'alt' : e.shiftKey ? 'shift' : 'none',
+            target: e.target
         })
         k.push(on('keyup', (e: Event) => (e as KeyboardEvent).code && blevent.keyboard.up(ev(e))))
         k.push(on('keydown', (e: Event) => (e as KeyboardEvent).code && blevent.keyboard.down(ev(e))))

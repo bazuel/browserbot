@@ -1,5 +1,4 @@
 import {
-  BLEvent,
   blevent,
   BLEventWithTarget,
   CookieMonitor,
@@ -55,8 +54,8 @@ blevent.cookie.data.on(sendToExtension);
 blevent.keyboard.input.on(sendEventWithTargetToExtension);
 blevent.keyboard.value.on(sendEventWithTargetToExtension);
 blevent.keyboard.checked.on(sendEventWithTargetToExtension);
-blevent.keyboard.up.on(sendToExtension);
-blevent.keyboard.down.on(sendToExtension);
+blevent.keyboard.up.on(sendEventWithTargetToExtension);
+blevent.keyboard.down.on(sendEventWithTargetToExtension);
 
 Object.keys(blevent.page).forEach((me) => blevent.page[me].on(sendToExtension));
 Object.keys(blevent.window).forEach((me) => blevent.window[me].on(sendToExtension));
