@@ -11,8 +11,10 @@ import {
   BLScrollEvent, BLStorageEvent,
   BLWindowResizeEvent
 } from "@browserbot/monitor/src/events";
+import {BBEventWithTarget} from "@browserbot/model";
 
 const storageService = new StorageService(new ConfigService());
+
 declare global {
   interface Window {
     blSerializer: any;
@@ -30,7 +32,7 @@ export class Runner {
   private lastAction: BLEvent;
   private takeScreenshot: boolean;
   private speed: number = 1;
-  private actionWhitelist = ["elementscroll", "keyup", "keydown", "mousemove", "scroll", "mouseup", "mousedown", "wait", "goto", "referrer", "resize", "device", "input", "after-response"]
+  private actionWhitelist = ["elementscroll", "keyup", "keydown", "mousemove", "scroll", "click", "contextmenu", "wait", "goto", "referrer", "resize", "device", "input", "after-response"]
   private nextAction: BLEvent;
 
   constructor() {
@@ -60,46 +62,40 @@ export class Runner {
           this.nextAction = jsonEvents[i + 1]
           await this.runAction(jsonEvents[i]);
         }
-        //await this.injectSerializerScript();
         await this.browser.close().then(_ => console.log("session-ended gracefully"));
       }
     });
   }
 
-  private async runAction(action: BLEvent) {
+  private async runAction(action: BLEvent | any) {
     console.log(action)
     if (this.lastAction) await this.page.waitForTimeout(
       (action.timestamp - this.lastAction.timestamp) * this.speed);
     if (action.name === 'input') {
-      await this.executeInput(action as BLInputChangeEvent & { targetSelector, value });
+      await this.executeInput(action);
     } else if (action.name === 'mousemove') {
-      await this.executeMouseMove(action as BLMouseEvent);
-    } else if (action.name === 'mousedown') {
-      await this.executeMouseDown();
-    } else if (action.name === 'mouseup') {
-      await this.executeMouseUp();
+      await this.executeMouseMove(action);
+    } else if (action.name === 'contextmenu') {
+      await this.executeRightClick(action);
+    } else if (action.name === 'click') {
+      await this.executeClick(action);
     } else if (action.name === 'keyup') {
-      await this.executeKeyUp(action as BLKeyboardEvent & { targetSelector });
+      await this.executeKeyUp(action);
     } else if (action.name === 'keydown') {
-      await this.executeKeyDown(action as BLKeyboardEvent & { targetSelector });
+      await this.executeKeyDown(action);
     } else if (action.name === 'scroll') {
-      await this.executeScroll(action as BLScrollEvent);
+      await this.executeScroll(action);
     } else if (action.name === 'resize') {
-      await this.executeResize(action as BLWindowResizeEvent);
+      await this.executeResize(action);
     } else if (action.name === 'referrer') {
-      await this.executeReferrer(action as BLPageReferrerEvent & { url });
-    } else if (action.name === 'after-response') {
-      //console.log(await this.executeRequest(action as BLHTTPResponseEvent))
-    } else if (action.name === 'storage') {
-      //await this.setStorage(action)
+      await this.executeReferrer(action);
     } else if (action.name === 'elementscroll') {
-      await this.executeElementScroll(action as BLScrollEvent & { targetSelector });
+      await this.executeElementScroll(action);
     }
     if (this.takeScreenshot) {
       /*const buffer = await this.page.screenshot();
       await storageService.upload(buffer, `${this.uploadPath}/${action.name}/${action.timestamp}`);*/
     }
-
   }
 
   private async setupContext(jsonEvents: BLEvent[]) {
@@ -149,22 +145,13 @@ export class Runner {
     this.takeScreenshot = this.nextAction?.name != 'mousemove'
   }
 
-  private async executeMouseDown() {
-    await this.page.mouse.down();
-    this.takeScreenshot = false
-  }
-
-  private async executeMouseUp() {
-    await this.page.mouse.up();
-    this.takeScreenshot = true
-  }
-
   private async executeScroll(a: BLScrollEvent) {
     let coordinates = {x: a.x, y: a.y};
     await this.page.evaluate(
       (coordinates) => window.scroll(coordinates.x, coordinates.y),
       coordinates
     );
+    this.takeScreenshot = true
   }
 
   private async executeResize(a: BLWindowResizeEvent) {
@@ -176,25 +163,29 @@ export class Runner {
     this.takeScreenshot = true
   }
 
-  private async executeInput(a: BLInputChangeEvent & { targetSelector, value }) {
+  private async executeInput(a: BBEventWithTarget<BLInputChangeEvent>) {
     await this.page.fill(a.targetSelector, a.value)
     this.takeScreenshot = this.nextAction?.name != 'input'
   }
 
-  private async executeKeyUp(a: BLKeyboardEvent & { targetSelector: string }) {
+  private async executeKeyUp(a: BBEventWithTarget<BLKeyboardEvent>) {
     if (!a.targetSelector.includes('input')
       || a.key == 'Enter'
-      || a.key == 'Ctrl'
-      || (this.lastAction as BLKeyboardEvent).key == 'Ctrl')
+      || a.key == 'Control'
+      || a.modifier == 'ctrl') {
       await this.page.keyboard.up(a.key)
+      this.takeScreenshot = true
+    }
   }
 
-  private async executeKeyDown(a: BLKeyboardEvent & { targetSelector: string }) {
+  private async executeKeyDown(a: BBEventWithTarget<BLKeyboardEvent>) {
     if (!a.targetSelector.includes('input')
       || a.key == 'Enter'
-      || a.key == 'Ctrl'
-      || (this.lastAction as BLKeyboardEvent).key == 'Ctrl')
+      || a.key == 'Control'
+      || a.modifier == 'ctrl') {
       await this.page.keyboard.down(a.key)
+      this.takeScreenshot = false
+    }
   }
 
   private async executeReferrer(a: BLPageReferrerEvent & { url }) {
@@ -202,6 +193,26 @@ export class Runner {
       waitUntil: 'domcontentloaded'
     });
     this.takeScreenshot = true
+  }
+
+  private async executeRightClick(a: BBEventWithTarget<BLMouseEvent>) {
+    await this.page.click(a.targetSelector, {button: "right"})
+    this.takeScreenshot = true
+  }
+
+  private async executeClick(a: BBEventWithTarget<BLMouseEvent>) {
+    await this.page.click(a.targetSelector, {button: "left"})
+    this.takeScreenshot = true
+  }
+
+  private async executeElementScroll(action: BBEventWithTarget<BLScrollEvent>) {
+    await this.page.evaluate((action) => {
+      console.log(document.querySelectorAll(action.targetSelector))
+      let selectedElement = document.querySelectorAll(action.targetSelector)[0]
+      selectedElement.scroll(action.x, action.y)
+      return selectedElement
+    }, action)
+    this.takeScreenshot = true;
   }
 
   async executeRequest(action: BLHTTPResponseEvent) {
@@ -221,7 +232,6 @@ export class Runner {
     }
   }
 
-
   private async setStorage(action: BLStorageEvent) {
     let storage = action.storage
     for (const name of Object.keys(storage)) {
@@ -229,16 +239,6 @@ export class Runner {
       await this.page.evaluate(() => localStorage.setItem(name, value))
     }
     console.log(await this.page.evaluate(() => JSON.stringify(localStorage)))
-  }
-
-  private async executeElementScroll(action: BLScrollEvent & { targetSelector: string }) {
-    await this.page.evaluate((action) => {
-      console.log(document.querySelectorAll(action.targetSelector))
-      let selectedElement = document.querySelectorAll(action.targetSelector)[0]
-      selectedElement.scroll(action.x, action.y)
-      return selectedElement
-    }, action)
-    this.takeScreenshot = true;
   }
 
   private async injectSerializerScript() {

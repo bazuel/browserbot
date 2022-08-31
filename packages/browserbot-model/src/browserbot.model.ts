@@ -43,3 +43,5 @@ export interface BBSession {
   path: string;
   owner?: BBUser;
 }
+
+export type BBEventWithTarget<T> = T & { targetSelector?: string, key?: string, value?: string }
