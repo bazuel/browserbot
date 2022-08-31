@@ -5,7 +5,7 @@ import {ConfigService, StorageService} from '@browserbot/backend-shared';
 import {
   BLEvent,
   BLHTTPResponseEvent,
-  BLInputChangeEvent,
+  BLInputChangeEvent, BLKeyboardEvent,
   BLMouseEvent,
   BLPageReferrerEvent,
   BLScrollEvent, BLStorageEvent,
@@ -30,7 +30,7 @@ export class Runner {
   private lastAction: BLEvent;
   private takeScreenshot: boolean;
   private speed: number = 1;
-  private actionWhitelist = ["elementscroll", "mousemove", "scroll", "mouseup", "mousedown", "wait", "goto", "referrer", "resize", "device", "input", "after-response"]
+  private actionWhitelist = ["elementscroll", "keyup", "keydown", "mousemove", "scroll", "mouseup", "mousedown", "wait", "goto", "referrer", "resize", "device", "input", "after-response"]
   private nextAction: BLEvent;
 
   constructor() {
@@ -78,12 +78,16 @@ export class Runner {
       await this.executeMouseDown();
     } else if (action.name === 'mouseup') {
       await this.executeMouseUp();
+    } else if (action.name === 'keyup') {
+      await this.executeKeyUp(action as BLKeyboardEvent & { targetSelector });
+    } else if (action.name === 'keydown') {
+      await this.executeKeyDown(action as BLKeyboardEvent & { targetSelector });
     } else if (action.name === 'scroll') {
       await this.executeScroll(action as BLScrollEvent);
     } else if (action.name === 'resize') {
       await this.executeResize(action as BLWindowResizeEvent);
     } else if (action.name === 'referrer') {
-      //await this.executeReferrer(action as BLPageReferrerEvent & {url});
+      await this.executeReferrer(action as BLPageReferrerEvent & { url });
     } else if (action.name === 'after-response') {
       //console.log(await this.executeRequest(action as BLHTTPResponseEvent))
     } else if (action.name === 'storage') {
@@ -177,6 +181,22 @@ export class Runner {
     this.takeScreenshot = this.nextAction?.name != 'input'
   }
 
+  private async executeKeyUp(a: BLKeyboardEvent & { targetSelector: string }) {
+    if (!a.targetSelector.includes('input')
+      || a.key == 'Enter'
+      || a.key == 'Ctrl'
+      || (this.lastAction as BLKeyboardEvent).key == 'Ctrl')
+      await this.page.keyboard.up(a.key)
+  }
+
+  private async executeKeyDown(a: BLKeyboardEvent & { targetSelector: string }) {
+    if (!a.targetSelector.includes('input')
+      || a.key == 'Enter'
+      || a.key == 'Ctrl'
+      || (this.lastAction as BLKeyboardEvent).key == 'Ctrl')
+      await this.page.keyboard.down(a.key)
+  }
+
   private async executeReferrer(a: BLPageReferrerEvent & { url }) {
     await this.page.goto(a.url, {
       waitUntil: 'domcontentloaded'
@@ -198,14 +218,6 @@ export class Runner {
         data: request.body,
         headers: headers
       })
-      /*} else if (action.request.method == 'DELETE') {
-        console.log(action.request.method + "not handled")
-      } else if (action.request.method == 'PUT') {
-        console.log(action.request.method + "not handled")
-      } else if (action.request.method == 'FETCH') {
-        console.log(action.request.method + "not handled")
-      } else {
-        console.log(action.request.method + "not handled")*/
     }
   }
 
@@ -225,7 +237,7 @@ export class Runner {
       let selectedElement = document.querySelectorAll(action.targetSelector)[0]
       selectedElement.scroll(action.x, action.y)
       return selectedElement
-    },action)
+    }, action)
     this.takeScreenshot = true;
   }
 
