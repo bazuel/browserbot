@@ -14,7 +14,7 @@ const runner = new Runner();
 
 server.get('/api/events', async (request) => {
 
-  const params: {path?:string} = request.params
+  const params: { path?: string } = request.query
   if (params.path)
     await runner.runSession(params.path);
   return {ok: 'true'};
