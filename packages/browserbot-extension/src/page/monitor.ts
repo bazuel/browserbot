@@ -11,7 +11,8 @@ import {
   PageMonitor,
   ScrollMonitor,
   StorageMonitor,
-  WindowResizeMonitor
+  WindowResizeMonitor,
+  MapElementsHandler
 } from '@browserbot/monitor';
 
 function sendToExtension(event) {
@@ -26,6 +27,8 @@ const selector = (e) => {
   }
 };
 
+const mapElementsHandler = new MapElementsHandler(selector, '*')
+
 export function targetToSelectors(e: BLEventWithTarget) {
   const targetSelector = e.target ? selector(e.target) : '';
   const currentTargetSelector = e.currentTarget ? selector(e.currentTarget) : '';
@@ -34,6 +37,13 @@ export function targetToSelectors(e: BLEventWithTarget) {
 }
 function sendEventWithTargetToExtension(event) {
   sendToExtension(targetToSelectors(event));
+}
+
+function sendEventWithTagPositionToExtension(event) {
+  let eventWithTarget = targetToSelectors(event)
+  let selectorEvent = eventWithTarget.targetSelector
+  let tagPosition = mapElementsHandler.mapElements[event.target.tagName].indexOf(selectorEvent)
+  sendToExtension({...eventWithTarget, tagPosition});
 }
 
 const monitors = [

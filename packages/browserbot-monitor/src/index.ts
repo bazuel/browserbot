@@ -14,3 +14,4 @@ export { blevent } from "./dispatched.events";
 export { BLEvent, BLEventWithTarget } from "./events";
 export {ElementSelectorFinder} from "./selector-finder.util"
 export {HttpMonitor} from "./http.monitor"
+export {MapElementsHandler} from "./map-elements-handler"
