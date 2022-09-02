@@ -40,7 +40,6 @@ async function targetMatcher(target: BBSerializedTarget, page: Page): Promise<Lo
       //check clientRect
       return await filterForRect(actualSelector, target.rect, page, locator);
   }
-  // check rectElement
 }
 
 export async function locatorFromTarget(target: BBSerializedTarget, page): Promise<Locator> {
