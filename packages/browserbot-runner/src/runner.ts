@@ -230,29 +230,16 @@ export class Runner {
   private async addPositionSelector() {
     // Must be a function that evaluates to a selector engine instance.
     const createPositionEngine = () => ({
-      query(root, selector) {
-        const x = +selector.split(',')[0];
-        const y = +selector.split(',')[1];
-        return root.ownerDocument.elementFromPoint(x, y);
-      },
-
-      // Returns all elements matching given selector in the root's subtree.
       queryAll(root, selector: string) {
         const x = +selector.split(',')[0];
         const y = +selector.split(',')[1];
-        const elWidth = +selector.split(',')[2];
-        const elHeight = +selector.split(',')[3];
-        console.log(root);
-        if (root.nodeName == '#document')
-          return Array.from(root.elementsFromPoint(x, y)).filter((elem: Element) => {
-            const { width, height } = elem.getBoundingClientRect();
-            return elWidth == width && elHeight == height;
-          });
-        else
-          return Array.from(root.ownerDocument.elementsFromPoint(x, y)).filter((elem: Element) => {
-            const { width, height } = elem.getBoundingClientRect();
-            return elWidth == width && elHeight == height;
-          });
+        if (root.nodeName == '#document') return [root];
+        else {
+          const rect = root.getBoundingClientRect();
+          if (Math.round(rect.x + rect.width / 2) == x && Math.round(rect.y + rect.height / 2) == y)
+            return [root];
+          else return [];
+        }
       }
     });
     await selectors.register('position', createPositionEngine);
