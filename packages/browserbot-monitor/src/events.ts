@@ -103,6 +103,7 @@ export interface BLEvent {
   type?: BLEventType;
   timestamp: number;
 }
+
 export interface BLEventWithTarget extends BLEvent {
   target?: EventTarget;
   currentTarget?: EventTarget;
@@ -162,7 +163,7 @@ export type BLPerformanceTimingEvent = BLEvent & { timing: PerformanceTiming };
 export type BLMediaEvent = BLEvent & { target };
 export type BLWindowResizeEvent = BLEvent & { width: number; height: number };
 export type BLPageVisibilityEvent = BLEvent & { active: boolean };
-export type BLPageReferrerEvent = BLEvent & { referrer: string };
+export type BLPageReferrerEvent = BLEvent & { referrer: string; url: string };
 export type BLNetworkEvent = BLEvent & { online: boolean };
 export type BLPageAdressEvent = BLEvent & { address: string };
 export type BLPageHashEvent = BLEvent & { hash: string };
