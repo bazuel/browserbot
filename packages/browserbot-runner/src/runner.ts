@@ -57,6 +57,7 @@ export class Runner {
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.88 Safari/537.36';
     this.viewport = { width: 1280, height: 619 };
     this.referrer = 'https://www.google.com/';
+    this.addPositionSelector().then((_) => console.log('context ready'));
   }
 
   async runSession(path: string) {
@@ -70,7 +71,6 @@ export class Runner {
         let jsonEvents: BLEvent[] = JSON.parse(raw);
 
         this.page = await (await this.setupContext(jsonEvents)).newPage();
-        await this.addPositionSelector();
         await this.setInitialPage(jsonEvents);
         jsonEvents = jsonEvents.filter((e) => this.actionWhitelist.includes(e.name));
         for (let i = 0; i < jsonEvents.length; i++) {
