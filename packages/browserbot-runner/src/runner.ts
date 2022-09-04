@@ -139,7 +139,7 @@ export class Runner {
   private async setInitialPage(jsonEvents) {
     try {
       await this.page.goto(
-        (jsonEvents.filter((a) => a.name === 'referrer')[0] as BLPageReferrerEvent & { url }).url,
+        (jsonEvents.filter((a) => a.name === 'referrer')[0] as BLPageReferrerEvent).url,
         {
           referer: this.referrer,
           waitUntil: 'domcontentloaded'
@@ -199,7 +199,7 @@ export class Runner {
     }
   }
 
-  private async executeReferrer(a: BLPageReferrerEvent & { url }) {
+  private async executeReferrer(a: BLPageReferrerEvent) {
     await this.page.goto(a.url, {
       waitUntil: 'domcontentloaded'
     });
