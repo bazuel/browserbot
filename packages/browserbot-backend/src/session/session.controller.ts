@@ -1,12 +1,4 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Query,
-  Req,
-  Res,
-  StreamableFile,
-} from '@nestjs/common';
+import { Controller, Get, Post, Query, Req, Res, StreamableFile } from '@nestjs/common';
 import { SessionService } from './session.service';
 
 @Controller('session')
@@ -14,21 +6,15 @@ export class SessionController {
   constructor(private sessionService: SessionService) {}
 
   @Get('download')
-  async download(
-    @Res({ passthrough: true }) res,
-    @Query('path') path,
-  ) {
+  async download(@Res({ passthrough: true }) res, @Query('path') path) {
     const stream = await this.sessionService.sessionStream(path);
     const filename = path.split('/').pop();
-    (res as any).header(
-      'Content-Disposition',
-      `attachment; filename="${filename}"`,
-    );
+    (res as any).header('Content-Disposition', `attachment; filename="${filename}"`);
     return new StreamableFile(stream);
   }
 
   @Post('upload')
-  async uploadFile(@Req() req, @Res() res) {
+  async uploadFile(@Req() req, @Res() res): Promise<any> {
     if (!req.isMultipart()) throw new Error('Not a multipart request');
 
     const data: {
@@ -47,11 +33,7 @@ export class SessionController {
         };
       };
     } = await req.file();
-
-    const { path } = await this.sessionService.saveSession(
-      data.file,
-      data.fields['url']?.value,
-    );
+    const { path } = await this.sessionService.saveSession(data.file, data.fields['url']?.value);
     console.log('path: ', path);
     res.send({ ok: true, path });
   }
