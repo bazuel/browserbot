@@ -54,3 +54,26 @@ export type BBSerializedTarget = {
   tag: string;
   innerText: string;
 };
+
+export type BBSessionInfo = {
+  sessionPath: string;
+  screenshots: BBScreenShot[];
+  domShots: BBDomShot[];
+  video: BBVideo;
+};
+
+export type BBScreenShot = {
+  filename: string;
+  dimension: { width: number; height: number };
+  targetInfo?: {
+    /*TODO*/
+  };
+};
+
+export type BBVideo = {
+  filename: string;
+};
+
+export type BBDomShot = {
+  filename: string;
+};

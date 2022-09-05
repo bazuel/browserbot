@@ -11,7 +11,7 @@ import {
   BLScrollEvent,
   BLWindowResizeEvent
 } from '@browserbot/monitor/src/events';
-import { BBEventWithSerializedTarget } from '@browserbot/model';
+import { BBEventWithSerializedTarget, BBSessionInfo } from '@browserbot/model';
 import { locatorFromTarget } from './target-matcher';
 
 const storageService = new StorageService(new ConfigService());
@@ -29,7 +29,6 @@ export class Runner {
   useragent: string;
   referrer: string;
   serializerScript: string;
-  uploadPath: string;
   private lastAction: BLEvent;
   private nextAction: BLEvent;
   private takeScreenshot: boolean;
@@ -50,6 +49,15 @@ export class Runner {
     'input',
     'after-response'
   ];
+  private sessionInfo: BBSessionInfo = {
+    sessionPath: '',
+    screenshots: [],
+    video: { filename: '' },
+    domShots: []
+  };
+  private filename: string;
+  private VIDEODIR = 'videos/';
+  private domJson: {};
 
   constructor() {
     this.serializerScript = fs.readFileSync('./scripts/index.serializer.js', 'utf8');
@@ -61,9 +69,10 @@ export class Runner {
   }
 
   async runSession(path: string) {
-    this.uploadPath = path.replace('.zip', '');
+    this.sessionInfo.sessionPath = path.replace('.zip', '');
+
     const actionsZip = await storageService.read(path);
-    this.browser = await chromium.launch({ channel: 'chrome', headless: false });
+    this.browser = await chromium.launch({ channel: 'chrome', headless: true });
 
     unzip(new Uint8Array(actionsZip), async (err, data) => {
       for (let f in data) {
@@ -79,6 +88,13 @@ export class Runner {
           this.nextAction = jsonEvents[i + 1];
           await this.runAction(jsonEvents[i]);
         }
+
+        storageService.upload(
+          Buffer.from(JSON.stringify(this.sessionInfo)),
+          `${this.sessionInfo.sessionPath}/info.json`
+        );
+        console.log(this.sessionInfo);
+
         await this.browser.close().then((_) => console.log('session-ended gracefully'));
       }
     });
@@ -111,8 +127,25 @@ export class Runner {
       await this.executeElementScroll(action);
     }
     if (this.takeScreenshot) {
-      const buffer = await this.page.screenshot();
-      await storageService.upload(buffer, `${this.uploadPath}/${action.name}/${action.timestamp}`);
+      this.filename = `${this.sessionInfo.sessionPath}/${action.name}/${action.timestamp}`;
+      const bufferScreenShot = await this.page.screenshot();
+      this.sessionInfo.screenshots.push({
+        filename: this.filename + '.png',
+        dimension: this.page.viewportSize()
+      });
+      storageService
+        .upload(bufferScreenShot, this.filename + '.png')
+        .then((_) => console.log(this.filename + '.png'));
+
+      this.domJson = await this.takeDomJson();
+      this.sessionInfo.domShots.push({
+        filename: this.filename + '.json'
+      });
+      let bufferDom = Buffer.from(JSON.stringify(this.domJson));
+
+      storageService
+        .upload(bufferDom, this.filename + '.json')
+        .then((_) => console.log(this.filename + '.json'));
     }
   }
 
@@ -134,7 +167,8 @@ export class Runner {
     }
     return await this.browser.newContext({
       viewport: this.viewport,
-      userAgent: this.useragent
+      userAgent: this.useragent,
+      recordVideo: { dir: this.VIDEODIR, size: this.viewport }
     });
   }
 
@@ -145,7 +179,7 @@ export class Runner {
 
   private async executeMouseMove(a: BLMouseEvent) {
     await this.page.mouse.move(a.x, a.y);
-    this.takeScreenshot = this.nextAction?.name != 'mousemove';
+    this.takeScreenshot = false;
   }
 
   private async executeScroll(a: BLScrollEvent) {
@@ -176,7 +210,7 @@ export class Runner {
   private async executeKeyUp(a: BBEventWithSerializedTarget<BLKeyboardEvent>) {
     if (a.target.tag != 'input' || a.key == 'Enter' || a.key == 'Control' || a.modifier == 'ctrl') {
       await this.page.keyboard.up(a.key);
-      this.takeScreenshot = true;
+      this.takeScreenshot = false;
     }
   }
 
@@ -189,8 +223,10 @@ export class Runner {
 
   private async executeReferrer(a: BLPageReferrerEvent) {
     await this.page.goto(a.url, {
-      waitUntil: 'domcontentloaded'
+      waitUntil: 'domcontentloaded',
+      referer: a.referrer
     });
+    await this.injectSerializerScript();
     this.takeScreenshot = true;
   }
 
@@ -214,6 +250,20 @@ export class Runner {
       locator.evaluate((elem, action) => elem.scroll(action.x, action.y), action)
     );
     this.takeScreenshot = true;
+  }
+
+  private async injectSerializerScript() {
+    await this.page.evaluate((serializerScript) => {
+      const s = document.createElement('script');
+      s.textContent = serializerScript;
+      document.head.appendChild(s);
+    }, this.serializerScript);
+  }
+
+  private async takeDomJson() {
+    return await this.page.evaluate(() => {
+      return new window.blSerializer.ElementSerializer().serialize(document);
+    });
   }
 
   private async addPositionSelector() {

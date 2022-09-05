@@ -37,4 +37,36 @@ export class SessionController {
     console.log('path: ', path);
     res.send({ ok: true, path });
   }
+
+  @Get('screenshot')
+  async getScreenshot(@Res({ passthrough: true }) res, @Query('path') path) {
+    const stream = await this.sessionService.sessionStream(path);
+    const filename = path.split('/').pop();
+    (res as any).header('Content-Disposition', `attachment; filename="${filename}"`);
+    return new StreamableFile(stream);
+  }
+
+  @Get('video')
+  async getVideo(@Res({ passthrough: true }) res: Response, @Query('path') path) {
+    const stream = await this.sessionService.sessionStream(path);
+    const filename = path.split('/').pop();
+    (res as any).header('Content-Disposition', `attachment; filename="${filename}"`);
+    return new StreamableFile(stream);
+  }
+
+  @Get('domShot')
+  async getDomShot(@Res({ passthrough: true }) res, @Query('path') path) {
+    const stream = await this.sessionService.sessionStream(path);
+    const filename = path.split('/').pop();
+    (res as any).header('Content-Disposition', `attachment; filename="${filename}"`);
+    return new StreamableFile(stream);
+  }
+
+  @Get('info')
+  async getInfo(@Res({ passthrough: true }) res, @Query('path') path) {
+    const stream = await this.sessionService.sessionStream(path);
+    const filename = path.split('/').pop();
+    (res as any).header('Content-Disposition', `attachment; filename="${filename}";`);
+    return new StreamableFile(stream);
+  }
 }
