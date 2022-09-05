@@ -31,9 +31,12 @@ export class Runner {
   serializerScript: string;
   uploadPath: string;
   private lastAction: BLEvent;
+  private nextAction: BLEvent;
   private takeScreenshot: boolean;
   private speed: number = 1;
-  private actionWhitelist = [
+  private actionWhitelist: BLEvent['name'][] = [
+    'mousedown',
+    'mouseup',
     'elementscroll',
     'keyup',
     'keydown',
@@ -41,15 +44,12 @@ export class Runner {
     'scroll',
     'click',
     'contextmenu',
-    'wait',
-    'goto',
     'referrer',
     'resize',
     'device',
     'input',
     'after-response'
   ];
-  private nextAction: BLEvent;
 
   constructor() {
     this.serializerScript = fs.readFileSync('./scripts/index.serializer.js', 'utf8');
@@ -93,8 +93,10 @@ export class Runner {
       await this.executeMouseMove(action);
     } else if (action.name === 'contextmenu') {
       await this.executeRightClick(action);
-    } else if (action.name === 'click') {
-      await this.executeClick(action);
+    } else if (action.name === 'mousedown') {
+      await this.executeMouseDown();
+    } else if (action.name === 'mouseup') {
+      await this.executeMouseUp();
     } else if (action.name === 'keyup') {
       await this.executeKeyUp(action);
     } else if (action.name === 'keydown') {
@@ -109,8 +111,8 @@ export class Runner {
       await this.executeElementScroll(action);
     }
     if (this.takeScreenshot) {
-      /*const buffer = await this.page.screenshot();
-      await storageService.upload(buffer, `${this.uploadPath}/${action.name}/${action.timestamp}`);*/
+      const buffer = await this.page.screenshot();
+      await storageService.upload(buffer, `${this.uploadPath}/${action.name}/${action.timestamp}`);
     }
   }
 
@@ -137,22 +139,8 @@ export class Runner {
   }
 
   private async setInitialPage(jsonEvents) {
-    try {
-      await this.page.goto(
-        (jsonEvents.filter((a) => a.name === 'referrer')[0] as BLPageReferrerEvent).url,
-        {
-          referer: this.referrer,
-          waitUntil: 'domcontentloaded'
-        }
-      );
-    } catch (e) {
-      try {
-        if (this.browser) {
-          await this.browser.close();
-        }
-      } catch (e) {}
-      throw new Error('goto action not found');
-    }
+    const action = jsonEvents.filter((a) => a.name === 'referrer')[0];
+    await this.executeReferrer(action);
   }
 
   private async executeMouseMove(a: BLMouseEvent) {
@@ -207,22 +195,23 @@ export class Runner {
   }
 
   private async executeRightClick(a: BBEventWithSerializedTarget<BLMouseEvent>) {
-    await locatorFromTarget(a.target, this.page).then(
-      async (locator) => await locator.click({ button: 'right' })
-    );
+    await this.page.mouse.click(a.x, a.y, { button: 'right' });
     this.takeScreenshot = true;
   }
 
-  private async executeClick(a: BBEventWithSerializedTarget<BLMouseEvent>) {
-    await locatorFromTarget(a.target, this.page).then(
-      async (locator) => await locator.click({ button: 'left' })
-    );
+  private async executeMouseDown() {
+    await this.page.mouse.down();
+    this.takeScreenshot = false;
+  }
+
+  private async executeMouseUp() {
+    await this.page.mouse.up();
     this.takeScreenshot = true;
   }
 
   private async executeElementScroll(action: BBEventWithSerializedTarget<BLScrollEvent>) {
-    await locatorFromTarget(action.target, this.page).then(
-      async (locator) => await locator.evaluate(() => console.log('scrolling'))
+    await locatorFromTarget(action.target, this.page).then(async (locator) =>
+      locator.evaluate((elem, action) => elem.scroll(action.x, action.y), action)
     );
     this.takeScreenshot = true;
   }
@@ -230,13 +219,28 @@ export class Runner {
   private async addPositionSelector() {
     // Must be a function that evaluates to a selector engine instance.
     const createPositionEngine = () => ({
-      queryAll(root, selector: string) {
+      queryAll(root: Element, selector: string) {
+        const rect = root.getBoundingClientRect();
         const x = +selector.split(',')[0];
         const y = +selector.split(',')[1];
+        const width = +selector.split(',')[2];
+        const height = +selector.split(',')[3];
+        const topLeft1 = [x, y];
+        const bottomRight1 = [x + width, y + height];
+        const topLeft2 = [rect.left, rect.top];
+        const bottomRight2 = [rect.right, rect.bottom];
         if (root.nodeName == '#document') return [root];
         else {
-          const rect = root.getBoundingClientRect();
-          if (Math.round(rect.x + rect.width / 2) == x && Math.round(rect.y + rect.height / 2) == y)
+          if (topLeft1[0] > bottomRight2[0] || topLeft2[0] > bottomRight1[0]) {
+            return [];
+          }
+          if (topLeft1[1] > bottomRight2[1] || topLeft2[1] > bottomRight1[1]) {
+            return [];
+          }
+          if (
+            Math.round(rect.height) == Math.round(height) &&
+            Math.round(rect.width) == Math.round(width)
+          )
             return [root];
           else return [];
         }

@@ -5,7 +5,6 @@ async function targetMatcher(target: BBSerializedTarget, page: Page): Promise<Lo
   // check tagname
   let actualSelector = target.tag;
   let locator: Locator = await page.locator(actualSelector);
-  console.log('tag', await locator.count());
   if ((await locator.count()) == 1) return locator;
   else if ((await locator.count()) > 1) {
     //check attributes
@@ -32,13 +31,13 @@ async function targetMatcher(target: BBSerializedTarget, page: Page): Promise<Lo
 
     //check innerText
     let newLocator = page.locator(actualSelector, { hasText: target.innerText });
-    console.log(await newLocator.count());
     locator = (await newLocator.count()) != 0 ? newLocator : locator;
-    console.log(await locator.count());
     if ((await locator.count()) == 1) return locator;
     if ((await locator.count()) > 1)
       //check clientRect
       return await filterForRect(actualSelector, target.rect, page, locator);
+
+    throw new Error('sono ancora: ' + (await locator.count()));
   }
 }
 
@@ -63,9 +62,7 @@ async function filterForRect(
 ): Promise<Locator> {
   console.log(await locator.count());
   let finalLocator = locator.filter({
-    has: page.locator(
-      `position=${Math.round(rect.x + rect.width / 2)},${Math.round(rect.y + rect.height / 2)}`
-    )
+    has: page.locator(`position=${rect.x},${rect.y},${rect.width},${rect.height}`)
   });
   console.log(await finalLocator.count());
   return finalLocator;
