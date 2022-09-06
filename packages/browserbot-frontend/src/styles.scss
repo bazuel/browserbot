@@ -1,1 +1,19 @@
 /* You can add global styles to this file, and also import other style files */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import 'node_modules/@butopen/design-system/src/index';
+
+:root {
+  --bo-theme-color: #4E4595;
+}
+
+body {
+  @extend .use-bo-design-system;
+  font-family: 'Open Sans', sans-serif;
+}
+
+label {
+  @apply mt-8;
+}

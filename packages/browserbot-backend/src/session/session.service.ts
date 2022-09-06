@@ -57,4 +57,12 @@ export class SessionService {
   async sessionStream(path: string) {
     return await this.storageService.getStream(path);
   }
+
+  async findById(id: string) {
+    return await this.sessionTable.findById(id);
+  }
+
+  async findByPath(path: string) {
+    return await this.sessionTable.findByField('path', path);
+  }
 }
