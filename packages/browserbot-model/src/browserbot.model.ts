@@ -65,9 +65,6 @@ export type BBSessionInfo = {
 export type BBScreenShot = {
   filename: string;
   dimension: { width: number; height: number };
-  targetInfo?: {
-    /*TODO*/
-  };
 };
 
 export type BBVideo = {

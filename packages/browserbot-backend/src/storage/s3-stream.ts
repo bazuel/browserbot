@@ -14,7 +14,7 @@ export class S3Stream extends Readable {
     maxLength: number,
     // You can pass any ReadableStream options to the NodeJS Readable super class here
     // For this example we wont use this, however I left it in to be more robust
-    nodeReadableStreamOptions?: ReadableOptions,
+    nodeReadableStreamOptions?: ReadableOptions
   ) {
     super(nodeReadableStreamOptions);
     this._maxContentLength = maxLength;
@@ -32,8 +32,7 @@ export class S3Stream extends Readable {
       const range = this._currentCursorPosition + this._s3DataRange;
       // If the range is greater than the total number of bytes in the file
       // We adjust the range to grab the remaining bytes of data
-      const adjustedRange =
-        range < this._maxContentLength ? range : this._maxContentLength;
+      const adjustedRange = range < this._maxContentLength ? range : this._maxContentLength;
       // Set the Range property on our s3 stream parameters
       this._s3StreamParams.Range = `bytes=${this._currentCursorPosition}-${adjustedRange}`;
       // Update the current range beginning for the next go
@@ -53,15 +52,11 @@ export class S3Stream extends Readable {
   }
 }
 
-export async function getS3Stream(
-  Bucket: string,
-  Key: string,
-  s3Client: S3,
-): Promise<S3Stream> {
+export async function getS3Stream(Bucket: string, Key: string, s3Client: S3): Promise<S3Stream> {
   return new Promise((resolve, reject) => {
     const bucketParams = {
       Bucket,
-      Key,
+      Key
     };
 
     try {

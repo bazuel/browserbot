@@ -51,3 +51,5 @@ Thumbs.db
 .env
 /packages/browserbot-runner/example-events/
 *.zip
+
+videos

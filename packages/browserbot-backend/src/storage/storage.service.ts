@@ -30,7 +30,7 @@ export class StorageService {
       endpoint: config.storage.endpoint,
       accessKeyId: config.storage.accessKey,
       secretAccessKey: config.storage.secretKey,
-      s3BucketEndpoint: true,
+      s3BucketEndpoint: true
     });
   }
 
@@ -39,7 +39,7 @@ export class StorageService {
       this.s3.listObjects(
         {
           Bucket: this.bucket,
-          Prefix: prefix,
+          Prefix: prefix
         },
         function (err, data) {
           if (err) {
@@ -48,7 +48,7 @@ export class StorageService {
             // Return the list ("Contents") as JSON
             s(data.Contents as unknown as S3Object[]);
           }
-        },
+        }
       );
     });
     return result;
@@ -91,7 +91,7 @@ export class StorageService {
             {
               Body: data,
               Bucket: this.bucket,
-              Key: filename,
+              Key: filename
             },
             function (err, data) {
               if (err) {
@@ -99,16 +99,10 @@ export class StorageService {
               } else {
                 s(data);
               }
-            },
+            }
           )
           .on('httpUploadProgress', ({ loaded, total }) => {
-            console.log(
-              'Progress:',
-              loaded,
-              '/',
-              total,
-              `${Math.round((100 * loaded) / total)}%`,
-            );
+            console.log('Progress:', loaded, '/', total, `${Math.round((100 * loaded) / total)}%`);
           });
       } catch (e) {
         throw new Error('Cannot upload file');

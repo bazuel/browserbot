@@ -27,7 +27,6 @@ export class Runner {
   page: Page;
   viewport: { width: number; height: number };
   useragent: string;
-  referrer: string;
   serializerScript: string;
   private lastAction: BLEvent;
   private nextAction: BLEvent;
@@ -57,22 +56,20 @@ export class Runner {
   };
   private filename: string;
   private VIDEODIR = 'videos/';
-  private domJson: {};
 
   constructor() {
     this.serializerScript = fs.readFileSync('./scripts/index.serializer.js', 'utf8');
     this.useragent =
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.88 Safari/537.36';
     this.viewport = { width: 1280, height: 619 };
-    this.referrer = 'https://www.google.com/';
-    this.addPositionSelector().then((_) => console.log('context ready'));
+    this.addPositionSelector().then((_) => console.log('Context ready'));
   }
 
   async runSession(path: string) {
     this.sessionInfo.sessionPath = path.replace('.zip', '');
 
     const actionsZip = await storageService.read(path);
-    this.browser = await chromium.launch({ channel: 'chrome', headless: true });
+    this.browser = await chromium.launch({ channel: 'chrome', headless: false });
 
     unzip(new Uint8Array(actionsZip), async (err, data) => {
       for (let f in data) {
@@ -80,6 +77,7 @@ export class Runner {
         let jsonEvents: BLEvent[] = JSON.parse(raw);
 
         this.page = await (await this.setupContext(jsonEvents)).newPage();
+        await this.page.addInitScript(this.serializerScript);
         await this.setInitialPage(jsonEvents);
         jsonEvents = jsonEvents.filter((e) => this.actionWhitelist.includes(e.name));
         for (let i = 0; i < jsonEvents.length; i++) {
@@ -93,9 +91,19 @@ export class Runner {
           Buffer.from(JSON.stringify(this.sessionInfo)),
           `${this.sessionInfo.sessionPath}/info.json`
         );
-        console.log(this.sessionInfo);
+        let pathVideo = await this.page.video().path();
 
         await this.browser.close().then((_) => console.log('session-ended gracefully'));
+
+        this.sessionInfo.video = { filename: `${this.sessionInfo.sessionPath}.webm` };
+
+        const readStream = fs.createReadStream(pathVideo);
+        await storageService.upload(readStream, this.sessionInfo.video.filename);
+        readStream.destroy();
+        fs.unlink(pathVideo, (err) => {
+          if (err) throw err;
+        });
+        console.log(this.sessionInfo);
       }
     });
   }
@@ -128,31 +136,26 @@ export class Runner {
     }
     if (this.takeScreenshot) {
       this.filename = `${this.sessionInfo.sessionPath}/${action.name}/${action.timestamp}`;
-      const bufferScreenShot = await this.page.screenshot();
+      this.page.screenshot().then((bufferScreenShot) => {
+        storageService.upload(bufferScreenShot, this.filename + '.png');
+      });
       this.sessionInfo.screenshots.push({
         filename: this.filename + '.png',
         dimension: this.page.viewportSize()
       });
-      storageService
-        .upload(bufferScreenShot, this.filename + '.png')
-        .then((_) => console.log(this.filename + '.png'));
 
-      this.domJson = await this.takeDomJson();
+      this.takeDom().then((domJson) => {
+        storageService.upload(Buffer.from(JSON.stringify(domJson)), this.filename + '.json');
+      });
       this.sessionInfo.domShots.push({
         filename: this.filename + '.json'
       });
-      let bufferDom = Buffer.from(JSON.stringify(this.domJson));
-
-      storageService
-        .upload(bufferDom, this.filename + '.json')
-        .then((_) => console.log(this.filename + '.json'));
     }
   }
 
   private async setupContext(jsonEvents: BLEvent[]) {
     let resizeAction = jsonEvents.filter((a) => a.name === 'resize')[0] as BLWindowResizeEvent;
     let deviceAction = jsonEvents.filter((a) => a.name === 'device')[0] as BLEvent & { userAgent };
-    let referrerAction = jsonEvents.filter((a) => a.name === 'referrer')[0] as BLPageReferrerEvent;
     if (resizeAction) {
       this.viewport = {
         width: resizeAction.width,
@@ -161,9 +164,6 @@ export class Runner {
     }
     if (deviceAction) {
       this.useragent = deviceAction.userAgent;
-    }
-    if (referrerAction) {
-      this.referrer = referrerAction.referrer;
     }
     return await this.browser.newContext({
       viewport: this.viewport,
@@ -223,10 +223,9 @@ export class Runner {
 
   private async executeReferrer(a: BLPageReferrerEvent) {
     await this.page.goto(a.url, {
-      waitUntil: 'domcontentloaded',
-      referer: a.referrer
+      referer: 'www.google.com',
+      waitUntil: 'domcontentloaded'
     });
-    await this.injectSerializerScript();
     this.takeScreenshot = true;
   }
 
@@ -252,15 +251,7 @@ export class Runner {
     this.takeScreenshot = true;
   }
 
-  private async injectSerializerScript() {
-    await this.page.evaluate((serializerScript) => {
-      const s = document.createElement('script');
-      s.textContent = serializerScript;
-      document.head.appendChild(s);
-    }, this.serializerScript);
-  }
-
-  private async takeDomJson() {
+  private async takeDom() {
     return await this.page.evaluate(() => {
       return new window.blSerializer.ElementSerializer().serialize(document);
     });
