@@ -40,30 +40,31 @@ export class SessionController {
 
   @Get('screenshot')
   async getScreenshot(@Res({ passthrough: true }) res, @Query('path') path) {
-    const stream = await this.sessionService.sessionStream(path);
-    const filename = path.split('/').pop();
-    (res as any).header('Content-Disposition', `attachment; filename="${filename}"`);
-    return new StreamableFile(stream);
+    return await this.getStreamByPath(path + '.png', res);
   }
 
   @Get('video')
   async getVideo(@Res({ passthrough: true }) res: Response, @Query('path') path) {
-    const stream = await this.sessionService.sessionStream(path);
-    const filename = path.split('/').pop();
-    (res as any).header('Content-Disposition', `attachment; filename="${filename}"`);
-    return new StreamableFile(stream);
+    return await this.getStreamByPath(path + '.webm', res);
   }
 
   @Get('domShot')
   async getDomShot(@Res({ passthrough: true }) res, @Query('path') path) {
-    const stream = await this.sessionService.sessionStream(path);
-    const filename = path.split('/').pop();
-    (res as any).header('Content-Disposition', `attachment; filename="${filename}"`);
-    return new StreamableFile(stream);
+    return await this.getStreamByPath(path + '.json', res);
   }
 
-  @Get('info')
-  async getInfo(@Res({ passthrough: true }) res, @Query('path') path) {
+  @Get('info-by-path')
+  async getInfoByPath(@Res({ passthrough: true }) res, @Query('path') path) {
+    return await this.getStreamByPath(path + '/info.json', res);
+  }
+
+  @Get('info-by-id')
+  async getInfoById(@Res({ passthrough: true }) res, @Query('id') id) {
+    const session = await this.sessionService.findById(id);
+    return await this.getStreamByPath(session.path + '/info.json', res);
+  }
+
+  private async getStreamByPath(path, res) {
     const stream = await this.sessionService.sessionStream(path);
     const filename = path.split('/').pop();
     (res as any).header('Content-Disposition', `attachment; filename="${filename}";`);
