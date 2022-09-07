@@ -39,11 +39,11 @@ export class SessionService {
 
   async saveSession(session: Buffer, url: string) {
     const path = this.path(url);
-    await this.sessionTable.create({ url, path });
+    const id = (await this.sessionTable.create({ url, path }))[0].bb_sessionid;
     this.storageService
       .upload(session, path)
       .then(() => fetch('http://localhost:3000/api/events?path=' + path));
-    return { path };
+    return { path, id };
   }
 
   path(url: string) {

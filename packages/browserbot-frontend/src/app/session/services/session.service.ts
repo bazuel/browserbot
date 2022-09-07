@@ -9,11 +9,11 @@ export class SessionService {
   constructor(private httpService: HttpService) {}
 
   async getSessionInfoByPath(path: string) {
-    return this.httpService.gest<BBSessionInfo>('/session/info-by-path', { path });
+    return await this.httpService.gest<BBSessionInfo>('/session/info-by-path', { path });
   }
 
   async getSessionInfoById(id: string) {
-    return this.httpService.gest<BBSessionInfo>('/session/info-by-id', { id });
+    return await this.httpService.gest<BBSessionInfo>('/session/info-by-id', { id });
   }
 
   async runSession(path: string) {

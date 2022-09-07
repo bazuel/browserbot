@@ -98,10 +98,10 @@ export class Runner {
 
         const readStream = fs.createReadStream(pathVideo);
         await storageService.upload(readStream, this.sessionInfo.video.filename);
-        readStream.destroy();
-        fs.unlink(pathVideo, (err) => {
-          if (err) throw err;
-        });
+        // readStream.destroy();
+        // fs.unlink(pathVideo, (err) => {
+        //   if (err) throw err;
+        // });
         console.log(this.sessionInfo);
       }
     });
@@ -144,7 +144,7 @@ export class Runner {
         dimension: this.page.viewportSize()
       });
 
-      this.takeDom().then((domJson) => {
+      await this.takeDom().then((domJson) => {
         storageService.upload(Buffer.from(JSON.stringify(domJson)), this.filename + '.json');
       });
       this.sessionInfo.domShots.push({

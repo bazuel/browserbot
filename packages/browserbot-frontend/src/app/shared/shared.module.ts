@@ -10,6 +10,7 @@ import { PopupComponent } from './components/popup/popup.component';
 @NgModule({
   declarations: [IconComponent, PopupComponent],
   imports: [CommonModule, HttpClientModule, BrowserbotSharedModule],
-  providers: [UrlParamsService, HttpService]
+  providers: [UrlParamsService, HttpService],
+  exports: [IconComponent, PopupComponent]
 })
 export class SharedModule {}
