@@ -30,8 +30,8 @@ export class Runner {
   serializerScript: string;
   private lastAction: BLEvent;
   private nextAction: BLEvent;
-  private takeScreenshot: boolean;
-  private speed: number = 1;
+  private takeAction: boolean;
+  private speed: number = 5;
   private actionWhitelist: BLEvent['name'][] = [
     'mousedown',
     'mouseup',
@@ -81,7 +81,6 @@ export class Runner {
         await this.setInitialPage(jsonEvents);
         jsonEvents = jsonEvents.filter((e) => this.actionWhitelist.includes(e.name));
         for (let i = 0; i < jsonEvents.length; i++) {
-          this.takeScreenshot = false;
           this.lastAction = jsonEvents[i - 1];
           this.nextAction = jsonEvents[i + 1];
           await this.runAction(jsonEvents[i]);
@@ -109,6 +108,7 @@ export class Runner {
   }
 
   private async runAction(action: BLEvent | any) {
+    this.takeAction = false;
     if (this.lastAction)
       await this.page.waitForTimeout((action.timestamp - this.lastAction.timestamp) * this.speed);
     if (action.name === 'input') {
@@ -134,9 +134,9 @@ export class Runner {
     } else if (action.name === 'elementscroll') {
       await this.executeElementScroll(action);
     }
-    if (this.takeScreenshot) {
+    if (this.takeAction) {
       this.filename = `${this.sessionInfo.sessionPath}/${action.name}/${action.timestamp}`;
-      this.page.screenshot().then((bufferScreenShot) => {
+      await this.page.screenshot().then((bufferScreenShot) => {
         storageService.upload(bufferScreenShot, this.filename + '.png');
       });
       this.sessionInfo.screenshots.push({
@@ -179,7 +179,7 @@ export class Runner {
 
   private async executeMouseMove(a: BLMouseEvent) {
     await this.page.mouse.move(a.x, a.y);
-    this.takeScreenshot = false;
+    this.takeAction = false;
   }
 
   private async executeScroll(a: BLScrollEvent) {
@@ -188,7 +188,7 @@ export class Runner {
       (coordinates) => window.scroll(coordinates.x, coordinates.y),
       coordinates
     );
-    this.takeScreenshot = true;
+    this.takeAction = false;
   }
 
   private async executeResize(a: BLWindowResizeEvent) {
@@ -197,27 +197,27 @@ export class Runner {
       height: a.height
     };
     await this.page.setViewportSize(this.viewport);
-    this.takeScreenshot = true;
+    this.takeAction = true;
   }
 
   private async executeInput(a: BBEventWithSerializedTarget<BLInputChangeEvent>) {
     await locatorFromTarget(a.target, this.page).then(
       async (locator) => await locator.fill(a.value)
     );
-    this.takeScreenshot = this.nextAction?.name != 'input';
+    this.takeAction = this.nextAction?.name != 'input';
   }
 
   private async executeKeyUp(a: BBEventWithSerializedTarget<BLKeyboardEvent>) {
     if (a.target.tag != 'input' || a.key == 'Enter' || a.key == 'Control' || a.modifier == 'ctrl') {
       await this.page.keyboard.up(a.key);
-      this.takeScreenshot = false;
+      this.takeAction = false;
     }
   }
 
   private async executeKeyDown(a: BBEventWithSerializedTarget<BLKeyboardEvent>) {
     if (a.target.tag != 'input' || a.key == 'Enter' || a.key == 'Control' || a.modifier == 'ctrl') {
       await this.page.keyboard.down(a.key);
-      this.takeScreenshot = false;
+      this.takeAction = false;
     }
   }
 
@@ -226,29 +226,29 @@ export class Runner {
       referer: 'www.google.com',
       waitUntil: 'domcontentloaded'
     });
-    this.takeScreenshot = true;
+    this.takeAction = true;
   }
 
   private async executeRightClick(a: BBEventWithSerializedTarget<BLMouseEvent>) {
     await this.page.mouse.click(a.x, a.y, { button: 'right' });
-    this.takeScreenshot = true;
+    this.takeAction = true;
   }
 
   private async executeMouseDown() {
     await this.page.mouse.down();
-    this.takeScreenshot = false;
+    this.takeAction = false;
   }
 
   private async executeMouseUp() {
     await this.page.mouse.up();
-    this.takeScreenshot = true;
+    this.takeAction = true;
   }
 
   private async executeElementScroll(action: BBEventWithSerializedTarget<BLScrollEvent>) {
     await locatorFromTarget(action.target, this.page).then(async (locator) =>
       locator.evaluate((elem, action) => elem.scroll(action.x, action.y), action)
     );
-    this.takeScreenshot = true;
+    this.takeAction = true;
   }
 
   private async takeDom() {

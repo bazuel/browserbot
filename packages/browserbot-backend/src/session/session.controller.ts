@@ -33,9 +33,12 @@ export class SessionController {
         };
       };
     } = await req.file();
-    const { path } = await this.sessionService.saveSession(data.file, data.fields['url']?.value);
+    const { path, id } = await this.sessionService.saveSession(
+      data.file,
+      data.fields['url']?.value
+    );
     console.log('path: ', path);
-    res.send({ ok: true, path });
+    res.send({ ok: true, path, id });
   }
 
   @Get('screenshot')
@@ -48,8 +51,8 @@ export class SessionController {
     return await this.getStreamByPath(path + '.webm', res);
   }
 
-  @Get('domShot')
-  async getDomShot(@Res({ passthrough: true }) res, @Query('path') path) {
+  @Get('dom')
+  async getDom(@Res({ passthrough: true }) res, @Query('path') path) {
     return await this.getStreamByPath(path + '.json', res);
   }
 
@@ -61,7 +64,8 @@ export class SessionController {
   @Get('info-by-id')
   async getInfoById(@Res({ passthrough: true }) res, @Query('id') id) {
     const session = await this.sessionService.findById(id);
-    return await this.getStreamByPath(session.path + '/info.json', res);
+    const path = session.path.replace('.zip', '/info.json');
+    return await this.getStreamByPath(path, res);
   }
 
   private async getStreamByPath(path, res) {
@@ -69,5 +73,10 @@ export class SessionController {
     const filename = path.split('/').pop();
     (res as any).header('Content-Disposition', `attachment; filename="${filename}";`);
     return new StreamableFile(stream);
+  }
+
+  @Get('all')
+  async getAll(@Res({ passthrough: true }) res, @Query('id') id) {
+    return await this.sessionService.getAll();
   }
 }

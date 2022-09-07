@@ -17,7 +17,7 @@ chrome.runtime.onMessage.addListener(async function (request, sender, sendRespon
     if (recording) {
       await setRecording(false);
       await chrome.tabs.sendMessage(tab.id!, { messageType: 'recording-ended' });
-      await uploadEvents(url!, events);
+      const res = await uploadEvents(url!, events);
       events = [];
     }
   } else if (request.messageType == 'start-recording') {

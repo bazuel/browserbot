@@ -15,6 +15,11 @@ export class HttpService {
     }
   }
 
+  setRootUrl(type: 'runner' | 'backend') {
+    if (type == 'runner') this.rootUrl = environment.api_runner;
+    else this.rootUrl = environment.api_backend;
+  }
+
   client() {
     return this.http;
   }

@@ -15,4 +15,11 @@ export class SessionService {
   async getSessionInfoById(id: string) {
     return this.httpService.gest<BBSessionInfo>('/session/info-by-id', { id });
   }
+
+  async runSession(path: string) {
+    this.httpService.setRootUrl('runner');
+    return await this.httpService
+      .gest<{ ok: string }>('/events', { path: path + '.zip' })
+      .then(() => this.httpService.setRootUrl('backend'));
+  }
 }

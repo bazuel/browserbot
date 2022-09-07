@@ -49,7 +49,7 @@ Thumbs.db
 *.wmv
 
 .env
-/packages/browserbot-runner/example-events/
+appunti/
 *.zip
 
 videos

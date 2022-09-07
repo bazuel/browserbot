@@ -19,12 +19,14 @@ export class SessionComponent implements OnInit {
     screenShot?: string;
     domShot?: string;
   } = {};
-  imgLoaded: true;
+  imgLoaded = false;
+  showVideo = false;
 
   constructor(private urlParamsService: UrlParamsService, private sessionService: SessionService) {}
 
+  @ShowFullScreenLoading()
   async ngOnInit() {
-    const sessionid = this.urlParamsService.get('sessionid');
+    const sessionid = this.urlParamsService.get('id');
     if (sessionid) {
       this.session.bb_sessionid = sessionid;
       this.sessionInfo = await this.sessionService.getSessionInfoById(sessionid);
@@ -39,13 +41,22 @@ export class SessionComponent implements OnInit {
   }
 
   @ShowFullScreenLoading()
-  showDetails(action: BBScreenShot) {
+  async showDetails(action: BBScreenShot) {
     this.detailsAction = {
       // timestamp: action.filename.split("/"),
       name: action.filename.replace('.png', ''),
       screenShot: action.filename
     };
+
+    await new Promise((r) => {
+      const image = new Image();
+      image.onload = r;
+      image.src = 'http://localhost:3005/api/session/screenshot?path=' + this.detailsAction.name;
+    });
+    this.imgLoaded = true;
+  }
+
+  async runSession() {
+    await this.sessionService.runSession(this.sessionInfo.sessionPath);
   }
 }
-
-/*http://localhost:4290/session/session-card?path=sessions%2Fstaging.agentesmith.com%2Fauth_@bb@_login%2F2022%2F09%2F05%2F1662372045609-292*/

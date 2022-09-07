@@ -1,5 +1,5 @@
-import Fastify, {FastifyInstance} from 'fastify';
-import {Runner} from './runner';
+import Fastify, { FastifyInstance } from 'fastify';
+import { Runner } from './runner';
 
 require('dotenv').config();
 
@@ -13,17 +13,15 @@ const server: FastifyInstance = Fastify({});
 const runner = new Runner();
 
 server.get('/api/events', async (request) => {
-
-  const params: { path?: string } = request.query
-  if (params.path)
-    await runner.runSession(params.path);
-  return {ok: 'true'};
+  const params: { path?: string } = request.query;
+  if (params.path) await runner.runSession(params.path);
+  return { ok: 'true' };
 });
 
 const start = async () => {
   try {
     console.log('BrowserBot runner v' + version);
-    await server.listen({port: 3000});
+    await server.listen({ port: 3000 });
   } catch (err) {
     server.log.error(err);
     process.exit(1);

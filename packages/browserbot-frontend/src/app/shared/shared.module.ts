@@ -4,9 +4,11 @@ import { UrlParamsService } from './services/url-params.service';
 import { HttpService } from './services/http.service';
 import { HttpClientModule } from '@angular/common/http';
 import { BrowserbotSharedModule } from '../browserbot-shared/browserbot-shared.module';
+import { IconComponent } from './components/icon/icon.component';
+import { PopupComponent } from './components/popup/popup.component';
 
 @NgModule({
-  declarations: [],
+  declarations: [IconComponent, PopupComponent],
   imports: [CommonModule, HttpClientModule, BrowserbotSharedModule],
   providers: [UrlParamsService, HttpService]
 })

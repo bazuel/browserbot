@@ -65,4 +65,8 @@ export class SessionService {
   async findByPath(path: string) {
     return await this.sessionTable.findByField('path', path);
   }
+
+  async getAll() {
+    return await this.sessionTable.all(0, 500);
+  }
 }
