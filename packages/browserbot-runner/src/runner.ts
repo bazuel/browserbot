@@ -138,9 +138,9 @@ export class Runner {
     }
     if (this.takeAction) {
       this.filename = `${this.sessionInfo.sessionPath}/${action.name}/${action.timestamp}`;
-      /*await this.page.screenshot().then((bufferScreenShot) => {
+      await this.page.screenshot().then((bufferScreenShot) => {
         storageService.upload(bufferScreenShot, this.filename + '.png');
-      });*/
+      });
       this.sessionInfo.screenshots.push({
         filename: this.filename + '.png',
         dimension: this.page.viewportSize()
