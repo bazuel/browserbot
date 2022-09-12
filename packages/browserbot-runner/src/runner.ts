@@ -1,6 +1,6 @@
 import { strFromU8, unzip } from 'fflate';
 import fs from 'fs';
-import { Browser, chromium, Page, selectors } from 'playwright';
+import { Browser, BrowserContext, chromium, Page, selectors } from 'playwright';
 import { ConfigService, StorageService } from '@browserbot/backend-shared';
 import {
   BLEvent,
@@ -56,6 +56,7 @@ export class Runner {
   };
   private filename: string;
   private VIDEODIR = 'videos/';
+  private context: BrowserContext;
 
   constructor() {
     this.serializerScript = fs.readFileSync('./scripts/index.serializer.js', 'utf8');
@@ -76,7 +77,8 @@ export class Runner {
         const raw = strFromU8(data[f]);
         let jsonEvents: BLEvent[] = JSON.parse(raw);
 
-        this.page = await (await this.setupContext(jsonEvents)).newPage();
+        this.context = await this.setupContext(jsonEvents);
+        this.page = await this.context.newPage();
         await this.page.addInitScript(this.serializerScript);
         await this.setInitialPage(jsonEvents);
         jsonEvents = jsonEvents.filter((e) => this.actionWhitelist.includes(e.name));
@@ -92,16 +94,16 @@ export class Runner {
         );
         let pathVideo = await this.page.video().path();
 
-        await this.browser.close().then((_) => console.log('session-ended gracefully'));
-
         this.sessionInfo.video = { filename: `${this.sessionInfo.sessionPath}.webm` };
-
-        const readBuffer = fs.readFileSync(pathVideo);
-        await storageService.upload(readBuffer, this.sessionInfo.video.filename);
-        // readStream.destroy();
-        // fs.unlink(pathVideo, (err) => {
-        //   if (err) throw err;
-        // });
+        await this.context.close();
+        console.log('session ended gracefully');
+        const readStream = fs.createReadStream(pathVideo);
+        await storageService.upload(readStream, this.sessionInfo.video.filename);
+        console.log('uploading ended');
+        readStream.destroy();
+        fs.unlink(pathVideo, (err) => {
+          if (err) throw err;
+        });
         console.log(this.sessionInfo);
       }
     });
