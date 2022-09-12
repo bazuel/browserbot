@@ -31,7 +31,7 @@ export class Runner {
   private lastAction: BLEvent;
   private nextAction: BLEvent;
   private takeAction: boolean;
-  private speed: number = 5;
+  private speed: number = 1;
   private actionWhitelist: BLEvent['name'][] = [
     'mousedown',
     'mouseup',
@@ -96,8 +96,8 @@ export class Runner {
 
         this.sessionInfo.video = { filename: `${this.sessionInfo.sessionPath}.webm` };
 
-        const readStream = fs.createReadStream(pathVideo);
-        await storageService.upload(readStream, this.sessionInfo.video.filename);
+        const readBuffer = fs.readFileSync(pathVideo);
+        await storageService.upload(readBuffer, this.sessionInfo.video.filename);
         // readStream.destroy();
         // fs.unlink(pathVideo, (err) => {
         //   if (err) throw err;
@@ -136,17 +136,17 @@ export class Runner {
     }
     if (this.takeAction) {
       this.filename = `${this.sessionInfo.sessionPath}/${action.name}/${action.timestamp}`;
-      await this.page.screenshot().then((bufferScreenShot) => {
+      /*await this.page.screenshot().then((bufferScreenShot) => {
         storageService.upload(bufferScreenShot, this.filename + '.png');
-      });
+      });*/
       this.sessionInfo.screenshots.push({
         filename: this.filename + '.png',
         dimension: this.page.viewportSize()
       });
 
-      await this.takeDom().then((domJson) => {
+      /*await this.takeDom().then((domJson) => {
         storageService.upload(Buffer.from(JSON.stringify(domJson)), this.filename + '.json');
-      });
+      });*/
       this.sessionInfo.domShots.push({
         filename: this.filename + '.json'
       });

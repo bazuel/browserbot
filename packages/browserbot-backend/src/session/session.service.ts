@@ -1,20 +1,16 @@
 import { Injectable } from '@nestjs/common';
-import { StorageService } from '../storage/storage.service';
+import { ConfigService, StorageService } from '@browserbot/backend-shared';
 import { TimeService } from '../time/time.service';
 import { PostgresDbService, sql } from '../shared/postgres-db.service';
 import { CrudService } from '../shared/crud.service';
 import { BBSession } from '@browserbot/model';
-
+const storageService = new StorageService(new ConfigService());
 @Injectable()
 export class SessionService {
   private sessionTable: CrudService<BBSession>;
   private table = 'bb_session';
   private id = 'bb_sessionid';
-  constructor(
-    private storageService: StorageService,
-    private timeService: TimeService,
-    private db: PostgresDbService
-  ) {
+  constructor(private timeService: TimeService, private db: PostgresDbService) {
     this.sessionTable = new CrudService<BBSession>(db, this.table, this.id);
   }
 
@@ -40,7 +36,7 @@ export class SessionService {
   async saveSession(session: Buffer, url: string) {
     const path = this.path(url);
     const id = (await this.sessionTable.create({ url, path }))[0].bb_sessionid;
-    this.storageService
+    storageService
       .upload(session, path)
       .then(() => fetch('http://localhost:3000/api/events?path=' + path));
     return { path, id };
@@ -55,7 +51,7 @@ export class SessionService {
   }
 
   async sessionStream(path: string) {
-    return await this.storageService.getStream(path);
+    return await storageService.getStream(path);
   }
 
   async findById(id: string) {
