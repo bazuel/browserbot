@@ -19,7 +19,7 @@ export class SessionService {
   async runSession(path: string) {
     this.httpService.setRootUrl('runner');
     return await this.httpService
-      .gest<{ ok: string }>('/events', { path: path + '.zip' })
+      .gest<{ ok: string }>('/events', { path: path + '.zip', backend: 'full' })
       .then(() => this.httpService.setRootUrl('backend'));
   }
 }

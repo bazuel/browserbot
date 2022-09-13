@@ -2,19 +2,9 @@ import { strFromU8, unzip } from 'fflate';
 import fs from 'fs';
 import { Browser, BrowserContext, chromium, Page, selectors } from 'playwright';
 import { ConfigService, StorageService } from '@browserbot/backend-shared';
-import {
-  BLEvent,
-  BLHTTPResponseEvent,
-  BLInputChangeEvent,
-  BLKeyboardEvent,
-  BLMouseEvent,
-  BLPageReferrerEvent,
-  BLScrollEvent,
-  BLStorageEvent,
-  BLWindowResizeEvent
-} from '@browserbot/monitor/src/events';
-import { BBEventWithSerializedTarget, BBSessionInfo } from '@browserbot/model';
-import { locatorFromTarget } from './target-matcher';
+import { BLEvent, BLWindowResizeEvent } from '@browserbot/monitor/src/events';
+import { BBSessionInfo } from '@browserbot/model';
+import { actionWhitelists, executeAction } from './actions';
 
 const storageService = new StorageService(new ConfigService());
 
@@ -34,24 +24,6 @@ export class Runner {
   private nextAction: BLEvent;
   private takeAction: boolean;
   private speed: number = 1;
-  private actionWhitelist: BLEvent['name'][] = [
-    'mousedown',
-    'mouseup',
-    'elementscroll',
-    'keyup',
-    'keydown',
-    'mousemove',
-    'scroll',
-    'click',
-    'contextmenu',
-    'referrer',
-    'resize',
-    'device',
-    'input',
-    'after-response'
-    // 'local-full',
-    // 'cookie-data'
-  ];
   private sessionInfo: BBSessionInfo = {
     sessionPath: '',
     screenshots: [],
@@ -60,7 +32,7 @@ export class Runner {
   };
   private filename: string;
   private VIDEODIR = 'videos/';
-  private context: BrowserContext;
+  context: BrowserContext;
 
   constructor() {
     this.serializerScript = fs.readFileSync('./scripts/index.serializer.js', 'utf8');
@@ -70,7 +42,7 @@ export class Runner {
     this.addPositionSelector().then((_) => console.log('Context ready'));
   }
 
-  async runSession(path: string) {
+  async runSession(path: string, backendType: 'full' | 'mock') {
     this.sessionInfo.sessionPath = path.replace('.zip', '');
 
     const actionsZip = await storageService.read(path);
@@ -84,80 +56,28 @@ export class Runner {
         this.context = await this.setupContext(jsonEvents);
         this.page = await this.context.newPage();
         await this.page.addInitScript(this.serializerScript);
-        await this.setInitialPage(jsonEvents);
-        jsonEvents = jsonEvents.filter((e) => this.actionWhitelist.includes(e.name));
+        jsonEvents = await this.setupPage(jsonEvents, backendType);
+        jsonEvents = jsonEvents.filter((e) => actionWhitelists[backendType].includes(e.name));
         for (let i = 0; i < jsonEvents.length; i++) {
           this.lastAction = jsonEvents[i - 1];
           this.nextAction = jsonEvents[i + 1];
           await this.runAction(jsonEvents[i]);
         }
-
-        storageService.upload(
-          Buffer.from(JSON.stringify(this.sessionInfo)),
-          `${this.sessionInfo.sessionPath}/info.json`
-        );
-        let pathVideo = await this.page.video().path();
-
-        this.sessionInfo.video = { filename: `${this.sessionInfo.sessionPath}.webm` };
-        await this.context.close();
-        console.log('session ended gracefully');
-        const readStream = fs.createReadStream(pathVideo);
-        await storageService.upload(readStream, this.sessionInfo.video.filename);
-        console.log('uploading ended');
-        readStream.destroy();
-        fs.unlink(pathVideo, (err) => {
-          if (err) throw err;
-        });
-        console.log(this.sessionInfo);
+        await this.concludeSession();
       }
     });
   }
 
-  private async runAction(action: BLEvent | any) {
+  private async runAction(action: BLEvent) {
     this.takeAction = false;
     if (this.lastAction)
-      await this.page.waitForTimeout((action.timestamp - this.lastAction.timestamp) * this.speed);
-    if (action.name === 'input') {
-      await this.executeInput(action);
-    } else if (action.name === 'mousemove') {
-      await this.executeMouseMove(action);
-    } else if (action.name === 'contextmenu') {
-      await this.executeRightClick(action);
-    } else if (action.name === 'mousedown') {
-      await this.executeMouseDown();
-    } else if (action.name === 'mouseup') {
-      await this.executeMouseUp();
-    } else if (action.name === 'keyup') {
-      await this.executeKeyUp(action);
-    } else if (action.name === 'keydown') {
-      await this.executeKeyDown(action);
-    } else if (action.name === 'scroll') {
-      await this.executeScroll(action);
-    } else if (action.name === 'resize') {
-      await this.executeResize(action);
-    } else if (action.name === 'referrer') {
-      await this.executeReferrer(action);
-    } else if (action.name === 'elementscroll') {
-      await this.executeElementScroll(action);
-    } else if (action.name === 'local-full') {
-      await this.setStorage(action);
-    }
-    if (this.takeAction) {
-      this.filename = `${this.sessionInfo.sessionPath}/${action.name}/${action.timestamp}`;
-      await this.page.screenshot().then((bufferScreenShot) => {
-        storageService.upload(bufferScreenShot, this.filename + '.png');
-      });
-      this.sessionInfo.screenshots.push({
-        filename: this.filename + '.png',
-        dimension: this.page.viewportSize()
-      });
+      await this.page.waitForTimeout(
+        (action.timestamp - this.lastAction.timestamp) * (1 / this.speed)
+      );
+    await executeAction[action.name].apply(this, [action]);
 
-      /*await this.takeDom().then((domJson) => {
-        storageService.upload(Buffer.from(JSON.stringify(domJson)), this.filename + '.json');
-      });*/
-      this.sessionInfo.domShots.push({
-        filename: this.filename + '.json'
-      });
+    if (this.takeAction) {
+      await this.takeShot(action);
     }
   }
 
@@ -180,122 +100,64 @@ export class Runner {
     });
   }
 
-  private async setInitialPage(jsonEvents) {
-    const action = jsonEvents.filter((a) => a.name === 'referrer')[0];
-    await this.executeReferrer(action);
-  }
-
-  private async executeMouseMove(a: BLMouseEvent) {
-    await this.page.mouse.move(a.x, a.y);
-    this.takeAction = false;
-  }
-
-  private async executeScroll(a: BLScrollEvent) {
-    let coordinates = { x: a.x, y: a.y };
-    await this.page.evaluate(
-      (coordinates) => window.scroll(coordinates.x, coordinates.y),
-      coordinates
-    );
-    this.takeAction = false;
-  }
-
-  private async executeResize(a: BLWindowResizeEvent) {
-    this.viewport = {
-      width: a.width,
-      height: a.height
-    };
-    await this.page.setViewportSize(this.viewport);
-    this.takeAction = true;
-  }
-
-  private async executeInput(a: BBEventWithSerializedTarget<BLInputChangeEvent>) {
-    await locatorFromTarget(a.target, this.page).then(
-      async (locator) => await locator.fill(a.value)
-    );
-    this.takeAction = this.nextAction?.name != 'input';
-  }
-
-  private async executeKeyUp(a: BBEventWithSerializedTarget<BLKeyboardEvent>) {
-    if (a.target.tag != 'input' || a.key == 'Enter' || a.key == 'Control' || a.modifier == 'ctrl') {
-      await this.page.keyboard.up(a.key);
-      this.takeAction = false;
+  private async setupPage(jsonEvents, backendType) {
+    let setupActionsName = ['referrer'];
+    if (backendType == 'mock')
+      setupActionsName = ['referrer', 'local-full', 'session-full', 'cookie-data'];
+    let index = -1;
+    let action;
+    for (const actionName of setupActionsName) {
+      action = jsonEvents.filter((a) => a.name === actionName)[0];
+      if (action) {
+        await executeAction[action.name].apply(this, [action]);
+        //remove element because overhead
+        index = jsonEvents.indexOf(action);
+        jsonEvents.splice(index, 1);
+      }
     }
+    return jsonEvents;
   }
 
-  private async executeKeyDown(a: BBEventWithSerializedTarget<BLKeyboardEvent>) {
-    if (a.target.tag != 'input' || a.key == 'Enter' || a.key == 'Control' || a.modifier == 'ctrl') {
-      await this.page.keyboard.down(a.key);
-      this.takeAction = false;
-    }
-  }
-
-  private async executeReferrer(a: BLPageReferrerEvent) {
-    await this.page.goto(a.url, {
-      referer: 'www.google.com',
-      waitUntil: 'domcontentloaded'
+  private async takeShot(action: BLEvent) {
+    this.filename = `${this.sessionInfo.sessionPath}/${action.name}/${action.timestamp}`;
+    await this.page.screenshot().then((bufferScreenShot) => {
+      storageService.upload(bufferScreenShot, this.filename + '.png');
     });
-    this.takeAction = true;
-  }
+    this.sessionInfo.screenshots.push({
+      filename: this.filename + '.png',
+      dimension: this.page.viewportSize()
+    });
 
-  private async executeRightClick(a: BBEventWithSerializedTarget<BLMouseEvent>) {
-    await this.page.mouse.click(a.x, a.y, { button: 'right' });
-    this.takeAction = true;
-  }
-
-  private async executeMouseDown() {
-    await this.page.mouse.down();
-    this.takeAction = false;
-  }
-
-  private async executeMouseUp() {
-    await this.page.mouse.up();
-    this.takeAction = true;
-  }
-
-  private async executeElementScroll(action: BBEventWithSerializedTarget<BLScrollEvent>) {
-    await locatorFromTarget(action.target, this.page).then(async (locator) =>
-      locator.evaluate((elem, action) => elem.scroll(action.x, action.y), action)
-    );
-    this.takeAction = true;
-  }
-
-  async executeRequest(action: BLHTTPResponseEvent) {
-    let requestContext = this.page.request;
-    let request = action.request;
-    let headers = {};
-    Object.keys(action.request.headers).forEach((h) => (headers[h] = action.request.headers[h][0]));
-    if (action.request.method == 'GET') {
-      return await requestContext.get(request.url, {
-        headers: headers
-      });
-    } else if (action.request.method == 'POST') {
-      return await requestContext.post(request.url, {
-        data: request.body,
-        headers: headers
-      });
-      /*} else if (action.request.method == 'DELETE') {
-        console.log(action.request.method + "not handled")
-      } else if (action.request.method == 'PUT') {
-        console.log(action.request.method + "not handled")
-      } else if (action.request.method == 'FETCH') {
-        console.log(action.request.method + "not handled")
-      } else {
-        console.log(action.request.method + "not handled")*/
-    }
-  }
-
-  private async setStorage(action: BLStorageEvent) {
-    let storage = action.storage;
-    for (const key in storage) {
-      let value = storage[key];
-      console.log(key, value);
-      await this.page.evaluate((obj) => localStorage.setItem(obj.key, obj.value), { key, value });
-    }
+    /*await this.takeDom().then((domJson) => {
+      storageService.upload(Buffer.from(JSON.stringify(domJson)), this.filename + '.json');
+    });
+    this.sessionInfo.domShots.push({
+      filename: this.filename + '.json'
+    });*/
   }
 
   private async takeDom() {
     return await this.page.evaluate(() => {
       return new window.blSerializer.ElementSerializer().serialize(document);
+    });
+  }
+
+  private async concludeSession() {
+    storageService.upload(
+      Buffer.from(JSON.stringify(this.sessionInfo)),
+      `${this.sessionInfo.sessionPath}/info.json`
+    );
+    let pathVideo = await this.page.video().path();
+
+    this.sessionInfo.video = { filename: `${this.sessionInfo.sessionPath}.webm` };
+    await this.context.close();
+    console.log('session ended gracefully');
+    const readStream = fs.createReadStream(pathVideo);
+    await storageService.upload(readStream, this.sessionInfo.video.filename);
+    console.log('uploading ended');
+    readStream.destroy();
+    fs.unlink(pathVideo, (err) => {
+      if (err) throw err;
     });
   }
 
