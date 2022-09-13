@@ -4,11 +4,13 @@ import { Browser, BrowserContext, chromium, Page, selectors } from 'playwright';
 import { ConfigService, StorageService } from '@browserbot/backend-shared';
 import {
   BLEvent,
+  BLHTTPResponseEvent,
   BLInputChangeEvent,
   BLKeyboardEvent,
   BLMouseEvent,
   BLPageReferrerEvent,
   BLScrollEvent,
+  BLStorageEvent,
   BLWindowResizeEvent
 } from '@browserbot/monitor/src/events';
 import { BBEventWithSerializedTarget, BBSessionInfo } from '@browserbot/model';
@@ -47,6 +49,8 @@ export class Runner {
     'device',
     'input',
     'after-response'
+    // 'local-full',
+    // 'cookie-data'
   ];
   private sessionInfo: BBSessionInfo = {
     sessionPath: '',
@@ -135,6 +139,8 @@ export class Runner {
       await this.executeReferrer(action);
     } else if (action.name === 'elementscroll') {
       await this.executeElementScroll(action);
+    } else if (action.name === 'local-full') {
+      await this.setStorage(action);
     }
     if (this.takeAction) {
       this.filename = `${this.sessionInfo.sessionPath}/${action.name}/${action.timestamp}`;
@@ -251,6 +257,40 @@ export class Runner {
       locator.evaluate((elem, action) => elem.scroll(action.x, action.y), action)
     );
     this.takeAction = true;
+  }
+
+  async executeRequest(action: BLHTTPResponseEvent) {
+    let requestContext = this.page.request;
+    let request = action.request;
+    let headers = {};
+    Object.keys(action.request.headers).forEach((h) => (headers[h] = action.request.headers[h][0]));
+    if (action.request.method == 'GET') {
+      return await requestContext.get(request.url, {
+        headers: headers
+      });
+    } else if (action.request.method == 'POST') {
+      return await requestContext.post(request.url, {
+        data: request.body,
+        headers: headers
+      });
+      /*} else if (action.request.method == 'DELETE') {
+        console.log(action.request.method + "not handled")
+      } else if (action.request.method == 'PUT') {
+        console.log(action.request.method + "not handled")
+      } else if (action.request.method == 'FETCH') {
+        console.log(action.request.method + "not handled")
+      } else {
+        console.log(action.request.method + "not handled")*/
+    }
+  }
+
+  private async setStorage(action: BLStorageEvent) {
+    let storage = action.storage;
+    for (const key in storage) {
+      let value = storage[key];
+      console.log(key, value);
+      await this.page.evaluate((obj) => localStorage.setItem(obj.key, obj.value), { key, value });
+    }
   }
 
   private async takeDom() {
