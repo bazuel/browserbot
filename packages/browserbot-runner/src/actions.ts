@@ -39,7 +39,7 @@ export const actionWhitelists: { [k: string]: BLEventName[] } = {
     'referrer',
     'resize',
     'input',
-    'after-response',
+    //'after-response',
     'local-full',
     'session-full',
     'cookie-data'
@@ -61,7 +61,7 @@ export const executeAction: Partial<{ [k in BLEventName]: (a: BLEvent) => Promis
   'local-full': setLocalStorage,
   'session-full': setSessionStorage,
   'cookie-data': setCookie,
-  'after-response': executeResponse
+  'after-response': executeRequest
 };
 
 export async function executeMouseMove(a: BLMouseEvent) {
@@ -136,11 +136,13 @@ export async function executeElementScroll(action: BBEventWithSerializedTarget<B
   this.takeAction = true;
 }
 
-export async function executeResponse(action: BLHTTPResponseEvent) {
+export async function executeRequest(action: BLHTTPResponseEvent) {
   let requestContext = this.page.request;
   let request = action.request;
   let headers = {};
   Object.keys(action.request.headers).forEach((h) => (headers[h] = action.request.headers[h][0]));
+  headers['timestamp-mock-browserbot'] = action.request.timestamp.toString();
+  console.log(action.request.url);
   if (action.request.method == 'GET') {
     return await requestContext.get(request.url, {
       headers: headers

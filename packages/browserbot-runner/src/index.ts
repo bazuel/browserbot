@@ -14,7 +14,7 @@ const runner = new Runner();
 
 server.get('/api/events', async (request) => {
   const params: { path?: string; backend?: 'mock' | 'full' } = request.query;
-  if (params.path && params.backend) await runner.runSession(params.path, 'full');
+  if (params.path && params.backend) await runner.runSession(params.path, 'mock');
   return { ok: 'true' };
 });
 

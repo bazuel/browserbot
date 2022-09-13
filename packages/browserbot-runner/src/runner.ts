@@ -2,7 +2,7 @@ import { strFromU8, unzip } from 'fflate';
 import fs from 'fs';
 import { Browser, BrowserContext, chromium, Page, selectors } from 'playwright';
 import { ConfigService, StorageService } from '@browserbot/backend-shared';
-import { BLEvent, BLWindowResizeEvent } from '@browserbot/monitor/src/events';
+import { BLEvent, BLHTTPResponseEvent, BLWindowResizeEvent } from '@browserbot/monitor/src/events';
 import { BBSessionInfo } from '@browserbot/model';
 import { actionWhitelists, executeAction } from './actions';
 
@@ -52,9 +52,9 @@ export class Runner {
       for (let f in data) {
         const raw = strFromU8(data[f]);
         let jsonEvents: BLEvent[] = JSON.parse(raw);
-
         this.context = await this.setupContext(jsonEvents);
         this.page = await this.context.newPage();
+        if (backendType == 'mock') await this.mockAllRequests(jsonEvents);
         await this.page.addInitScript(this.serializerScript);
         jsonEvents = await this.setupPage(jsonEvents, backendType);
         jsonEvents = jsonEvents.filter((e) => actionWhitelists[backendType].includes(e.name));
@@ -192,5 +192,31 @@ export class Runner {
       }
     });
     await selectors.register('position', createPositionEngine);
+  }
+
+  private async mockAllRequests(jsonEvents: BLEvent[]) {
+    let key;
+    let responses = jsonEvents.filter((event) => event.name == 'after-response') as any;
+
+    let requestMap: { [k: string]: any[] } = {};
+    for (const { request, response, ...other } of responses) {
+      key = `${request.method}.${request.url}`;
+      console.log(`${request.method}.${request.url}`);
+      if (!requestMap[key]) requestMap[key] = [];
+      requestMap[key].push(response);
+    }
+    await this.page.route('*/**', (route, request) => {
+      if (request.resourceType() != 'xhr' && request.resourceType() != 'fetch') route.continue();
+      else {
+        let response = requestMap[`${request.method()}.${request.url()}`].shift();
+        console.log(`${request.method()}.${request.url()}`);
+        let headers = {};
+        Object.keys(response.headers).forEach((h) => (headers[h] = response.headers[h][0]));
+        route.fulfill({
+          headers: headers,
+          body: response.body as string
+        });
+      }
+    });
   }
 }
