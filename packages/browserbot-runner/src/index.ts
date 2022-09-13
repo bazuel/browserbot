@@ -13,8 +13,8 @@ const server: FastifyInstance = Fastify({});
 const runner = new Runner();
 
 server.get('/api/events', async (request) => {
-  const params: { path?: string } = request.query;
-  if (params.path) await runner.runSession(params.path);
+  const params: { path?: string; backend?: 'mock' | 'full' } = request.query;
+  if (params.path && params.backend) await runner.runSession(params.path, 'full');
   return { ok: 'true' };
 });
 
