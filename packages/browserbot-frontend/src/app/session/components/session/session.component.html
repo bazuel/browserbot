@@ -9,7 +9,7 @@
     </div>
   </div>
 
-  <div class="relative flex-1 h-full bg-bb-50 p-2.5">
+  <div class="relative flex-1 h-full bg-bb-50 p-2.5 overflow-y-scroll">
     <div class="flex flex-row justify-between m-5">
       <div class="flex flex-row items-center">
         <img src="/assets/robot.png" width="87px" height="88px" alt="Robby!">
@@ -58,8 +58,7 @@
       <label>Dettagli azione</label>
       <label>Istantanea</label>
       <img class="m-4" src="http://localhost:3005/api/session/screenshot?path={{detailsAction.name}}" *ngIf="imgLoaded"
-           alt="{{detailsAction.name}}" width="75%">
-      <label>Istantanea DOM</label>
+           alt="{{detailsAction.name}}" width="50%">
     </div>
   </div>
   <bb-popup *ngIf="showVideo" (close)="showVideo= false">
