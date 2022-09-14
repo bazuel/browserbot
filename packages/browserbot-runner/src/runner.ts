@@ -201,7 +201,6 @@ export class Runner {
     let requestMap: { [k: string]: any[] } = {};
     for (const { request, response, ...other } of responses) {
       key = `${request.method}.${request.url}`;
-      console.log(`${request.method}.${request.url}`);
       if (!requestMap[key]) requestMap[key] = [];
       requestMap[key].push(response);
     }
@@ -209,7 +208,6 @@ export class Runner {
       if (request.resourceType() != 'xhr' && request.resourceType() != 'fetch') route.continue();
       else {
         let response = requestMap[`${request.method()}.${request.url()}`].shift();
-        console.log(`${request.method()}.${request.url()}`);
         let headers = {};
         Object.keys(response.headers).forEach((h) => (headers[h] = response.headers[h][0]));
         route.fulfill({
