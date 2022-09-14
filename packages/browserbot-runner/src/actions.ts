@@ -107,6 +107,7 @@ export async function executeKeyDown(a: BBEventWithSerializedTarget<BLKeyboardEv
 }
 
 export async function executeReferrer(a: BLPageReferrerEvent) {
+  //this method will be executed only once, during setupPage!
   await this.page.goto(a.url, {
     referer: 'www.google.com',
     waitUntil: 'domcontentloaded'
