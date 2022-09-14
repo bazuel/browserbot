@@ -36,7 +36,7 @@ export const actionWhitelists: { [k: string]: BLEventName[] } = {
     'mousemove',
     'scroll',
     'contextmenu',
-    'referrer',
+    //'referrer',
     'resize',
     'input',
     //'after-response',
@@ -180,5 +180,7 @@ export async function setSessionStorage(action: BLStorageEvent) {
 }
 
 export async function setCookie(action: BLCookieEvent) {
-  await this.page.evaluate((cookie) => (document.cookie = cookie), action.cookie);
+  for (const cookie of action.cookie.split(';')) {
+    await this.page.evaluate((cookie) => (document.cookie = cookie), cookie);
+  }
 }

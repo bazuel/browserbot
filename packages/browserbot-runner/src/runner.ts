@@ -2,7 +2,7 @@ import { strFromU8, unzip } from 'fflate';
 import fs from 'fs';
 import { Browser, BrowserContext, chromium, Page, selectors } from 'playwright';
 import { ConfigService, StorageService } from '@browserbot/backend-shared';
-import { BLEvent, BLHTTPResponseEvent, BLWindowResizeEvent } from '@browserbot/monitor/src/events';
+import { BLEvent, BLWindowResizeEvent } from '@browserbot/monitor/src/events';
 import { BBSessionInfo } from '@browserbot/model';
 import { actionWhitelists, executeAction } from './actions';
 
@@ -54,9 +54,12 @@ export class Runner {
         let jsonEvents: BLEvent[] = JSON.parse(raw);
         this.context = await this.setupContext(jsonEvents);
         this.page = await this.context.newPage();
-        if (backendType == 'mock') await this.mockAllRequests(jsonEvents);
-        await this.page.addInitScript(this.serializerScript);
         jsonEvents = await this.setupPage(jsonEvents, backendType);
+        if (backendType == 'mock') {
+          await this.mockAllRequests(jsonEvents);
+          await this.mockDate(jsonEvents[0].timestamp);
+        }
+        await this.page.addInitScript(this.serializerScript);
         jsonEvents = jsonEvents.filter((e) => actionWhitelists[backendType].includes(e.name));
         for (let i = 0; i < jsonEvents.length; i++) {
           this.lastAction = jsonEvents[i - 1];
@@ -69,6 +72,8 @@ export class Runner {
   }
 
   private async runAction(action: BLEvent) {
+    await this.page.evaluate(() => console.log(Date.now()));
+    await this.page.evaluate(() => console.log(new Date()));
     this.takeAction = false;
     if (this.lastAction)
       await this.page.waitForTimeout(
@@ -103,16 +108,13 @@ export class Runner {
   private async setupPage(jsonEvents, backendType) {
     let setupActionsName = ['referrer'];
     if (backendType == 'mock')
-      setupActionsName = ['referrer', 'local-full', 'session-full', 'cookie-data'];
-    let index = -1;
-    let action;
+      setupActionsName = ['referrer', 'cookie-data', 'local-full', 'session-full'];
     for (const actionName of setupActionsName) {
-      action = jsonEvents.filter((a) => a.name === actionName)[0];
+      let action = jsonEvents.filter((a) => a.name === actionName)[0];
       if (action) {
         await executeAction[action.name].apply(this, [action]);
         //remove element because overhead
-        index = jsonEvents.indexOf(action);
-        jsonEvents.splice(index, 1);
+        jsonEvents.splice(jsonEvents.indexOf(action), 1);
       }
     }
     return jsonEvents;
@@ -197,24 +199,52 @@ export class Runner {
   private async mockAllRequests(jsonEvents: BLEvent[]) {
     let key;
     let responses = jsonEvents.filter((event) => event.name == 'after-response') as any;
-
     let requestMap: { [k: string]: any[] } = {};
-    for (const { request, response, ...other } of responses) {
+    for (const { request, response } of responses) {
       key = `${request.method}.${request.url}`;
       if (!requestMap[key]) requestMap[key] = [];
       requestMap[key].push(response);
     }
-    await this.page.route('*/**', (route, request) => {
-      if (request.resourceType() != 'xhr' && request.resourceType() != 'fetch') route.continue();
-      else {
+    await this.page.route('*/**', async (route, request) => {
+      if (
+        (request.resourceType() == 'xhr' || request.resourceType() == 'fetch') &&
+        requestMap[`${request.method()}.${request.url()}`] &&
+        requestMap[`${request.method()}.${request.url()}`].length
+      ) {
         let response = requestMap[`${request.method()}.${request.url()}`].shift();
         let headers = {};
-        Object.keys(response.headers).forEach((h) => (headers[h] = response.headers[h][0]));
-        route.fulfill({
+        Object.keys(response.headers).forEach((h) => (headers[h] = response.headers[h]));
+        await route.fulfill({
           headers: headers,
-          body: response.body as string
+          body: response.body as string,
+          status: response.status
         });
+      } else {
+        await route.continue();
       }
     });
+  }
+
+  private async mockDate(timestamp: number) {
+    // Pick the new/fake "now" for you test pages.
+    const fakeNow = timestamp;
+
+    // Update the Date accordingly in your test pages
+    await this.page.addInitScript(`{
+        // Extend Date constructor to default to fakeNow
+        Date = class extends Date {
+          constructor(...args) {
+            if (args.length === 0) {
+              super(${fakeNow});
+            } else {
+              super(...args);
+            }
+          }
+        }
+        // Override Date.now() to start from fakeNow
+        const __DateNowOffset = ${fakeNow} - Date.now();
+        const __DateNow = Date.now;
+        Date.now = () => __DateNow() + __DateNowOffset;
+      }`);
   }
 }
