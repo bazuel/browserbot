@@ -43,6 +43,7 @@ export class Runner {
   private VIDEODIR = 'videos/';
   context: BrowserContext;
   mocked: { date: boolean; storage: boolean };
+  private action: BLEvent;
 
   constructor() {
     this.serializerScript = fs.readFileSync('./scripts/index.serializer.js', 'utf8');
@@ -62,13 +63,13 @@ export class Runner {
       for (let f in data) {
         const raw = strFromU8(data[f]);
         let jsonEvents: BLEvent[] = JSON.parse(raw);
+        this.action = jsonEvents[0];
         this.context = await this.setupContext(jsonEvents);
         await this.exposeFunctions();
         //await this.context.addInitScript(this.serializerScript);
         if (backendType == 'mock') {
           jsonEvents = await this.mockStorage(jsonEvents);
-          //1663168825112 - 2 * 86400000
-          await this.mockDate(1);
+          await this.mockDate();
           await this.mockRoutes(jsonEvents);
         }
         this.page = await this.context.newPage();
@@ -76,16 +77,18 @@ export class Runner {
         jsonEvents = jsonEvents.filter((e) => actionWhitelists[backendType].includes(e.name));
         for (let i = 0; i < jsonEvents.length; i++) {
           this.lastAction = jsonEvents[i - 1];
+          this.action = jsonEvents[i];
           this.nextAction = jsonEvents[i + 1];
-          await this.runAction(jsonEvents[i]);
+          await this.runAction(this.action);
         }
-        //await this.concludeSession();
+        await this.concludeSession();
       }
     });
   }
 
   private async exposeFunctions() {
     await this.context.exposeFunction('controlMock', () => this.mocked);
+    await this.context.exposeFunction('getActualTime', () => this.action.timestamp);
     await this.context.exposeFunction('setMockDateTrue', () => (this.mocked.date = true));
     await this.context.exposeFunction('setMockStorageTrue', () => (this.mocked.storage = true));
   }
@@ -252,30 +255,30 @@ export class Runner {
     });
   }
 
-  private async mockDate(timestamp: number) {
+  private async mockDate() {
     // Pick the new/fake "now" for you test pages.
-    const fakeNow = timestamp;
 
     // Update the Date accordingly in your test pages
     await this.context.addInitScript(`{
         // Extend Date constructor to default to fakeNow
-         (async() => {if(!(await window.controlMock()).date){
-          Date = class extends Date {
-            constructor(...args) {
-              if (args.length === 0) {
-                super(${fakeNow});
-              } else {
-                super(...args);
+         (async() => {
+              let fakeNow = await window.getActualTime()
+              Date = class extends Date {
+                constructor(...args) {
+                  if (args.length === 0) {
+                    super(fakeNow);
+                  } else {
+                    super(...args);
+                  }
+                }
               }
-            }
-          }
-          // Override Date.now() to start from fakeNow
-          const __DateNowOffset = ${fakeNow} - Date.now();
-          const __DateNow = Date.now;
-          Date.now = () => __DateNow() + __DateNowOffset;
-          window.setMockDateTrue()
-        }
-        })()
+              // Override Date.now() to start from fakeNow
+              const __DateNowOffset = fakeNow - Date.now();
+              const __DateNow = Date.now;
+              Date.now = () => __DateNow() + __DateNowOffset;
+              window.setMockDateTrue()
+           
+         })()
       }`);
   }
 
