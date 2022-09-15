@@ -37,7 +37,7 @@ async function targetMatcher(target: BBSerializedTarget, page: Page): Promise<Lo
       //check clientRect
       return await filterForRect(actualSelector, target.rect, page, locator);
 
-    throw new Error('sono ancora: ' + (await locator.count()));
+    throw new Error('selettore: sono ancora: ' + (await locator.count()));
   }
 }
 
