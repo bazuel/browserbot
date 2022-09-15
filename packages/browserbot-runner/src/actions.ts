@@ -38,11 +38,11 @@ export const actionWhitelists: { [k: string]: BLEventName[] } = {
     'contextmenu',
     //'referrer',
     'resize',
-    'input',
+    'input'
     //'after-response',
-    'local-full',
-    'session-full',
-    'cookie-data'
+    //'local-full',
+    //'session-full',
+    //'cookie-data'
   ]
 };
 

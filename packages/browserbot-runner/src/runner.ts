@@ -2,7 +2,12 @@ import { strFromU8, unzip } from 'fflate';
 import fs from 'fs';
 import { Browser, BrowserContext, chromium, Page, selectors } from 'playwright';
 import { ConfigService, StorageService } from '@browserbot/backend-shared';
-import { BLEvent, BLWindowResizeEvent } from '@browserbot/monitor/src/events';
+import {
+  BLCookieEvent,
+  BLEvent,
+  BLStorageEvent,
+  BLWindowResizeEvent
+} from '@browserbot/monitor/src/events';
 import { BBSessionInfo } from '@browserbot/model';
 import { actionWhitelists, executeAction } from './actions';
 
@@ -11,6 +16,10 @@ const storageService = new StorageService(new ConfigService());
 declare global {
   interface Window {
     blSerializer: any;
+    __browserbot: { dataMocked: boolean; storageMocked: boolean };
+    controlMock: () => Promise<{ date: boolean; storage: boolean }>;
+    setMockDateTrue: () => void;
+    setMockStorageTrue: () => void;
   }
 }
 
@@ -33,6 +42,7 @@ export class Runner {
   private filename: string;
   private VIDEODIR = 'videos/';
   context: BrowserContext;
+  mocked: { date: boolean; storage: boolean };
 
   constructor() {
     this.serializerScript = fs.readFileSync('./scripts/index.serializer.js', 'utf8');
@@ -44,46 +54,59 @@ export class Runner {
 
   async runSession(path: string, backendType: 'full' | 'mock') {
     this.sessionInfo.sessionPath = path.replace('.zip', '');
-
     const actionsZip = await storageService.read(path);
     this.browser = await chromium.launch({ channel: 'chrome', headless: false });
+    this.mocked = { date: false, storage: false };
 
     unzip(new Uint8Array(actionsZip), async (err, data) => {
       for (let f in data) {
         const raw = strFromU8(data[f]);
         let jsonEvents: BLEvent[] = JSON.parse(raw);
         this.context = await this.setupContext(jsonEvents);
-        this.page = await this.context.newPage();
-        jsonEvents = await this.setupPage(jsonEvents, backendType);
+        await this.exposeFunctions();
+        //await this.context.addInitScript(this.serializerScript);
         if (backendType == 'mock') {
-          await this.mockAllRequests(jsonEvents);
-          await this.mockDate(jsonEvents[0].timestamp);
+          jsonEvents = await this.mockStorage(jsonEvents);
+          //1663168825112 - 2 * 86400000
+          await this.mockDate(1);
+          await this.mockRoutes(jsonEvents);
         }
-        await this.page.addInitScript(this.serializerScript);
+        this.page = await this.context.newPage();
+        jsonEvents = await this.setupPage(jsonEvents);
         jsonEvents = jsonEvents.filter((e) => actionWhitelists[backendType].includes(e.name));
         for (let i = 0; i < jsonEvents.length; i++) {
           this.lastAction = jsonEvents[i - 1];
           this.nextAction = jsonEvents[i + 1];
           await this.runAction(jsonEvents[i]);
         }
-        await this.concludeSession();
+        //await this.concludeSession();
       }
     });
   }
 
+  private async exposeFunctions() {
+    await this.context.exposeFunction('controlMock', () => this.mocked);
+    await this.context.exposeFunction('setMockDateTrue', () => (this.mocked.date = true));
+    await this.context.exposeFunction('setMockStorageTrue', () => (this.mocked.storage = true));
+  }
+
   private async runAction(action: BLEvent) {
     await this.page.evaluate(() => console.log(Date.now()));
-    await this.page.evaluate(() => console.log(new Date()));
+    console.log(await this.page.evaluate(() => window.controlMock()));
+
     this.takeAction = false;
+    await this.wait(action);
+    await executeAction[action.name].apply(this, [action]);
+    if (this.takeAction) {
+      await this.takeShot(action);
+    }
+  }
+
+  private async wait(action: BLEvent) {
     if (this.lastAction)
       await this.page.waitForTimeout(
         (action.timestamp - this.lastAction.timestamp) * (1 / this.speed)
       );
-    await executeAction[action.name].apply(this, [action]);
-
-    if (this.takeAction) {
-      await this.takeShot(action);
-    }
   }
 
   private async setupContext(jsonEvents: BLEvent[]) {
@@ -105,15 +128,12 @@ export class Runner {
     });
   }
 
-  private async setupPage(jsonEvents, backendType) {
+  private async setupPage(jsonEvents) {
     let setupActionsName = ['referrer'];
-    if (backendType == 'mock')
-      setupActionsName = ['referrer', 'cookie-data', 'local-full', 'session-full'];
     for (const actionName of setupActionsName) {
       let action = jsonEvents.filter((a) => a.name === actionName)[0];
       if (action) {
         await executeAction[action.name].apply(this, [action]);
-        //remove element because overhead
         jsonEvents.splice(jsonEvents.indexOf(action), 1);
       }
     }
@@ -129,7 +149,7 @@ export class Runner {
       filename: this.filename + '.png',
       dimension: this.page.viewportSize()
     });
-
+    //for DOM snapshots
     /*await this.takeDom().then((domJson) => {
       storageService.upload(Buffer.from(JSON.stringify(domJson)), this.filename + '.json');
     });
@@ -145,15 +165,22 @@ export class Runner {
   }
 
   private async concludeSession() {
-    storageService.upload(
+    await this.uploadInfoJson();
+    let localPathVideo = await this.page.video().path(); //local path inside docker container
+    await this.context.close();
+    console.log('session ended gracefully');
+    await this.uploadVideo(localPathVideo);
+  }
+
+  private async uploadInfoJson() {
+    this.sessionInfo.video = { filename: `${this.sessionInfo.sessionPath}.webm` };
+    await storageService.upload(
       Buffer.from(JSON.stringify(this.sessionInfo)),
       `${this.sessionInfo.sessionPath}/info.json`
     );
-    let pathVideo = await this.page.video().path();
+  }
 
-    this.sessionInfo.video = { filename: `${this.sessionInfo.sessionPath}.webm` };
-    await this.context.close();
-    console.log('session ended gracefully');
+  private async uploadVideo(pathVideo: string) {
     const readStream = fs.createReadStream(pathVideo);
     await storageService.upload(readStream, this.sessionInfo.video.filename);
     console.log('uploading ended');
@@ -196,7 +223,7 @@ export class Runner {
     await selectors.register('position', createPositionEngine);
   }
 
-  private async mockAllRequests(jsonEvents: BLEvent[]) {
+  private async mockRoutes(jsonEvents: BLEvent[]) {
     let key;
     let responses = jsonEvents.filter((event) => event.name == 'after-response') as any;
     let requestMap: { [k: string]: any[] } = {};
@@ -205,7 +232,7 @@ export class Runner {
       if (!requestMap[key]) requestMap[key] = [];
       requestMap[key].push(response);
     }
-    await this.page.route('*/**', async (route, request) => {
+    await this.context.route('*/**', async (route, request) => {
       if (
         (request.resourceType() == 'xhr' || request.resourceType() == 'fetch') &&
         requestMap[`${request.method()}.${request.url()}`] &&
@@ -230,7 +257,7 @@ export class Runner {
     const fakeNow = timestamp;
 
     // Update the Date accordingly in your test pages
-    await this.page.addInitScript(`{
+    await this.context.addInitScript(`{
         // Extend Date constructor to default to fakeNow
         Date = class extends Date {
           constructor(...args) {
@@ -246,5 +273,50 @@ export class Runner {
         const __DateNow = Date.now;
         Date.now = () => __DateNow() + __DateNowOffset;
       }`);
+  }
+
+  private async mockStorage(jsonEvents: BLEvent[]) {
+    let data: {
+      cookies?: string;
+      localStorage?: { [k: string]: string };
+      sessionStorage?: { [k: string]: string };
+    } = {};
+    let cookieAction = jsonEvents.filter((ev) => ev.name == 'cookie-data')[0] as BLCookieEvent;
+    if (cookieAction) {
+      jsonEvents.splice(jsonEvents.indexOf(cookieAction), 1);
+      data.cookies = cookieAction.cookie;
+    }
+    let localStorageAction = jsonEvents.filter(
+      (ev) => ev.name == 'local-full'
+    )[0] as BLStorageEvent;
+    if (localStorageAction) {
+      jsonEvents.splice(jsonEvents.indexOf(localStorageAction), 1);
+      data.localStorage = localStorageAction.storage;
+    }
+    let sessionStorageAction = jsonEvents.filter(
+      (ev) => ev.name == 'session-full'
+    )[0] as BLStorageEvent;
+    if (sessionStorageAction) {
+      jsonEvents.splice(jsonEvents.indexOf(sessionStorageAction), 1);
+      data.sessionStorage = sessionStorageAction.storage;
+    }
+    await this.context.addInitScript(async (data) => {
+      if (!(await window.controlMock()).storage) {
+        let mockData = data;
+        if (mockData.cookies) {
+          for (const cookie of mockData.cookies.split(';')) {
+            document.cookie = cookie;
+          }
+        }
+        for (const key in mockData.localStorage) {
+          localStorage.setItem(key, mockData.localStorage[key]);
+        }
+        for (const key in mockData.sessionStorage) {
+          sessionStorage.setItem(key, mockData.sessionStorage[key]);
+        }
+        window.setMockStorageTrue();
+      }
+    }, data);
+    return jsonEvents;
   }
 }
