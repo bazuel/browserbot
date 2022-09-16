@@ -2,14 +2,10 @@ import { strFromU8, unzip } from 'fflate';
 import fs from 'fs';
 import { Browser, BrowserContext, chromium, Page, selectors } from 'playwright';
 import { ConfigService, StorageService } from '@browserbot/backend-shared';
-import {
-  BLCookieEvent,
-  BLEvent,
-  BLStorageEvent,
-  BLWindowResizeEvent
-} from '@browserbot/monitor/src/events';
+import { BLEvent, BLWindowResizeEvent } from '@browserbot/monitor/src/events';
 import { BBSessionInfo } from '@browserbot/model';
 import { actionWhitelists, executeAction } from './actions';
+import { MockService } from './mock.service';
 
 const storageService = new StorageService(new ConfigService());
 
@@ -20,6 +16,8 @@ declare global {
     controlMock: () => Promise<{ date: boolean; storage: boolean }>;
     setMockDateTrue: () => void;
     setMockStorageTrue: () => void;
+    // getCurrentMockedTimestamp:
+    getActualTime: () => Promise<number>;
   }
 }
 
@@ -44,6 +42,7 @@ export class Runner {
   context: BrowserContext;
   mocked: { date: boolean; storage: boolean };
   private action: BLEvent;
+  private mockService: MockService;
 
   constructor() {
     this.serializerScript = fs.readFileSync('./scripts/index.serializer.js', 'utf8');
@@ -65,12 +64,13 @@ export class Runner {
         let jsonEvents: BLEvent[] = JSON.parse(raw);
         this.action = jsonEvents[0];
         this.context = await this.setupContext(jsonEvents);
-        await this.exposeFunctions();
+        this.mockService = new MockService(this.context);
         //await this.context.addInitScript(this.serializerScript);
         if (backendType == 'mock') {
-          jsonEvents = await this.mockStorage(jsonEvents);
-          await this.mockDate();
-          await this.mockRoutes(jsonEvents);
+          await this.exposeFunctions();
+          jsonEvents = await this.mockService.mockStorage(jsonEvents);
+          await this.mockService.mockDate();
+          await this.mockService.mockRoutes(jsonEvents);
         }
         this.page = await this.context.newPage();
         jsonEvents = await this.setupPage(jsonEvents);
@@ -94,9 +94,6 @@ export class Runner {
   }
 
   private async runAction(action: BLEvent) {
-    await this.page.evaluate(() => console.log(Date.now()));
-    console.log(await this.page.evaluate(() => window.controlMock()));
-
     this.takeAction = false;
     await this.wait(action);
     await executeAction[action.name].apply(this, [action]);
@@ -224,106 +221,5 @@ export class Runner {
       }
     });
     await selectors.register('position', createPositionEngine);
-  }
-
-  private async mockRoutes(jsonEvents: BLEvent[]) {
-    let key;
-    let responses = jsonEvents.filter((event) => event.name == 'after-response') as any;
-    let requestMap: { [k: string]: any[] } = {};
-    for (const { request, response } of responses) {
-      key = `${request.method}.${request.url}`;
-      if (!requestMap[key]) requestMap[key] = [];
-      requestMap[key].push(response);
-    }
-    await this.context.route('*/**', async (route, request) => {
-      if (
-        (request.resourceType() == 'xhr' || request.resourceType() == 'fetch') &&
-        requestMap[`${request.method()}.${request.url()}`] &&
-        requestMap[`${request.method()}.${request.url()}`].length
-      ) {
-        let response = requestMap[`${request.method()}.${request.url()}`].shift();
-        let headers = {};
-        Object.keys(response.headers).forEach((h) => (headers[h] = response.headers[h]));
-        await route.fulfill({
-          headers: headers,
-          body: response.body as string,
-          status: response.status
-        });
-      } else {
-        await route.continue();
-      }
-    });
-  }
-
-  private async mockDate() {
-    // Pick the new/fake "now" for you test pages.
-
-    // Update the Date accordingly in your test pages
-    await this.context.addInitScript(`{
-        // Extend Date constructor to default to fakeNow
-         (async() => {
-              let fakeNow = await window.getActualTime()
-              Date = class extends Date {
-                constructor(...args) {
-                  if (args.length === 0) {
-                    super(fakeNow);
-                  } else {
-                    super(...args);
-                  }
-                }
-              }
-              // Override Date.now() to start from fakeNow
-              const __DateNowOffset = fakeNow - Date.now();
-              const __DateNow = Date.now;
-              Date.now = () => __DateNow() + __DateNowOffset;
-              window.setMockDateTrue()
-           
-         })()
-      }`);
-  }
-
-  private async mockStorage(jsonEvents: BLEvent[]) {
-    let data: {
-      cookies?: string;
-      localStorage?: { [k: string]: string };
-      sessionStorage?: { [k: string]: string };
-    } = {};
-    let cookieAction = jsonEvents.filter((ev) => ev.name == 'cookie-data')[0] as BLCookieEvent;
-    if (cookieAction) {
-      jsonEvents.splice(jsonEvents.indexOf(cookieAction), 1);
-      data.cookies = cookieAction.cookie;
-    }
-    let localStorageAction = jsonEvents.filter(
-      (ev) => ev.name == 'local-full'
-    )[0] as BLStorageEvent;
-    if (localStorageAction) {
-      jsonEvents.splice(jsonEvents.indexOf(localStorageAction), 1);
-      data.localStorage = localStorageAction.storage;
-    }
-    let sessionStorageAction = jsonEvents.filter(
-      (ev) => ev.name == 'session-full'
-    )[0] as BLStorageEvent;
-    if (sessionStorageAction) {
-      jsonEvents.splice(jsonEvents.indexOf(sessionStorageAction), 1);
-      data.sessionStorage = sessionStorageAction.storage;
-    }
-    await this.context.addInitScript(async (data) => {
-      if (!(await window.controlMock()).storage) {
-        let mockData = data;
-        if (mockData.cookies) {
-          for (const cookie of mockData.cookies.split(';')) {
-            document.cookie = cookie;
-          }
-        }
-        for (const key in mockData.localStorage) {
-          localStorage.setItem(key, mockData.localStorage[key]);
-        }
-        for (const key in mockData.sessionStorage) {
-          sessionStorage.setItem(key, mockData.sessionStorage[key]);
-        }
-        window.setMockStorageTrue();
-      }
-    }, data);
-    return jsonEvents;
   }
 }

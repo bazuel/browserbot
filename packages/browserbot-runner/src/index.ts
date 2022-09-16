@@ -12,10 +12,14 @@ process.on('uncaughtException', function (err) {
 const server: FastifyInstance = Fastify({});
 const runner = new Runner();
 
-server.get('/api/events', async (request) => {
+server.get('/api/events', async (request, response) => {
   const params: { path?: string; backend?: 'mock' | 'full' } = request.query;
-  if (params.path && params.backend) await runner.runSession(params.path, 'mock');
-  return { ok: 'true' };
+  if (params.path && params.backend)
+    runner
+      .runSession(params.path, 'full')
+      .then(() => response.send({ ok: true }))
+      .catch((reason) => response.send({ ok: false, reason: reason }));
+  else return { message: 'bad parameters' };
 });
 
 const start = async () => {
