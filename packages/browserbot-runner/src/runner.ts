@@ -78,6 +78,8 @@ export class Runner {
     this.context = await this.setupContext(jsonEvents);
     if (this.sessionType == 'mock') jsonEvents = await this.setupMock(jsonEvents);
     jsonEvents = await this.setupPage(jsonEvents);
+    if (this.page.url().includes('www.google.com/search?q='))
+      await this.page.locator('button:has-text("Accetta tutto")').click();
     return jsonEvents.filter((e) => actionWhitelists[this.sessionType].includes(e.name));
   }
 
