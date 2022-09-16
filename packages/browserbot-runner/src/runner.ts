@@ -1,4 +1,4 @@
-import { strFromU8, unzip } from 'fflate';
+import { strFromU8, unzip, Unzipped } from 'fflate';
 import fs from 'fs';
 import { Browser, BrowserContext, chromium, Page, selectors } from 'playwright';
 import { ConfigService, StorageService } from '@browserbot/backend-shared';
@@ -16,8 +16,7 @@ declare global {
     controlMock: () => Promise<{ date: boolean; storage: boolean }>;
     setMockDateTrue: () => void;
     setMockStorageTrue: () => void;
-    // getCurrentMockedTimestamp:
-    getActualTime: () => Promise<number>;
+    getActualMockedTimestamp: () => Promise<number>;
   }
 }
 
@@ -40,9 +39,8 @@ export class Runner {
   private filename: string;
   private VIDEODIR = 'videos/';
   context: BrowserContext;
-  mocked: { date: boolean; storage: boolean };
-  private action: BLEvent;
   private mockService: MockService;
+  sessionType: 'mock' | 'full';
 
   constructor() {
     this.serializerScript = fs.readFileSync('./scripts/index.serializer.js', 'utf8');
@@ -52,49 +50,50 @@ export class Runner {
     this.addPositionSelector().then((_) => console.log('Context ready'));
   }
 
-  async runSession(path: string, backendType: 'full' | 'mock') {
+  async run(path: string, backendType: 'full' | 'mock') {
+    this.sessionType = backendType;
     this.sessionInfo.sessionPath = path.replace('.zip', '');
     const actionsZip = await storageService.read(path);
     this.browser = await chromium.launch({ channel: 'chrome', headless: false });
-    this.mocked = { date: false, storage: false };
-
     unzip(new Uint8Array(actionsZip), async (err, data) => {
-      for (let f in data) {
-        const raw = strFromU8(data[f]);
-        let jsonEvents: BLEvent[] = JSON.parse(raw);
-        this.action = jsonEvents[0];
-        this.context = await this.setupContext(jsonEvents);
-        this.mockService = new MockService(this.context);
-        //await this.context.addInitScript(this.serializerScript);
-        if (backendType == 'mock') {
-          await this.exposeFunctions();
-          jsonEvents = await this.mockService.mockStorage(jsonEvents);
-          await this.mockService.mockDate();
-          await this.mockService.mockRoutes(jsonEvents);
-        }
-        this.page = await this.context.newPage();
-        jsonEvents = await this.setupPage(jsonEvents);
-        jsonEvents = jsonEvents.filter((e) => actionWhitelists[backendType].includes(e.name));
-        for (let i = 0; i < jsonEvents.length; i++) {
-          this.lastAction = jsonEvents[i - 1];
-          this.action = jsonEvents[i];
-          this.nextAction = jsonEvents[i + 1];
-          await this.runAction(this.action);
-        }
-        await this.concludeSession();
-      }
+      await this.runSession(data);
     });
   }
 
-  private async exposeFunctions() {
-    await this.context.exposeFunction('controlMock', () => this.mocked);
-    await this.context.exposeFunction('getActualTime', () => this.action.timestamp);
-    await this.context.exposeFunction('setMockDateTrue', () => (this.mocked.date = true));
-    await this.context.exposeFunction('setMockStorageTrue', () => (this.mocked.storage = true));
+  private async runSession(data: Unzipped) {
+    for (let f in data) {
+      const raw = strFromU8(data[f]);
+      let jsonEvents: BLEvent[] = JSON.parse(raw);
+      jsonEvents = await this.setup(jsonEvents);
+      for (let i = 0; i < jsonEvents.length; i++) {
+        this.lastAction = jsonEvents[i - 1];
+        this.nextAction = jsonEvents[i + 1];
+        await this.runAction(jsonEvents[i]);
+      }
+      await this.concludeSession();
+    }
+  }
+
+  private async setup(jsonEvents: BLEvent[]) {
+    this.context = await this.setupContext(jsonEvents);
+    if (this.sessionType == 'mock') jsonEvents = await this.setupMock(jsonEvents);
+    jsonEvents = await this.setupPage(jsonEvents);
+    return jsonEvents.filter((e) => actionWhitelists[this.sessionType].includes(e.name));
+  }
+
+  private async setupMock(jsonEvents: BLEvent[]) {
+    this.mockService = new MockService(this.context);
+    this.mockService.actualTimestamp = jsonEvents[0].timestamp;
+    await this.mockService.exposeFunctions();
+    jsonEvents = await this.mockService.mockStorage(jsonEvents);
+    await this.mockService.mockDate();
+    await this.mockService.mockRoutes(jsonEvents);
+    return jsonEvents;
   }
 
   private async runAction(action: BLEvent) {
     this.takeAction = false;
+    if (this.sessionType == 'mock') this.mockService.actualTimestamp = action.timestamp;
     await this.wait(action);
     await executeAction[action.name].apply(this, [action]);
     if (this.takeAction) {
@@ -129,6 +128,7 @@ export class Runner {
   }
 
   private async setupPage(jsonEvents) {
+    this.page = await this.context.newPage();
     let setupActionsName = ['referrer'];
     for (const actionName of setupActionsName) {
       let action = jsonEvents.filter((a) => a.name === actionName)[0];

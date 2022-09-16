@@ -4,9 +4,11 @@ import { BLCookieEvent, BLStorageEvent } from '@browserbot/monitor/src/events';
 
 export class MockService {
   private context: BrowserContext;
-
+  private mockedState: { date: boolean; storage: boolean };
+  private _actualTimestamp: number;
   constructor(context: BrowserContext) {
     this.context = context;
+    this.mockedState = { date: false, storage: false };
   }
 
   async mockStorage(jsonEvents: BLEvent[]) {
@@ -105,5 +107,19 @@ export class MockService {
         await route.continue();
       }
     });
+  }
+
+  async exposeFunctions() {
+    await this.context.exposeFunction('controlMock', () => this.mockedState);
+    await this.context.exposeFunction('getActualMockedTimestamp', () => this._actualTimestamp);
+    await this.context.exposeFunction('setMockDateTrue', () => (this.mockedState.date = true));
+    await this.context.exposeFunction(
+      'setMockStorageTrue',
+      () => (this.mockedState.storage = true)
+    );
+  }
+
+  set actualTimestamp(value: number) {
+    this._actualTimestamp = value;
   }
 }

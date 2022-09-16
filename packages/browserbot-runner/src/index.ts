@@ -16,7 +16,7 @@ server.get('/api/events', async (request, response) => {
   const params: { path?: string; backend?: 'mock' | 'full' } = request.query;
   if (params.path && params.backend)
     runner
-      .runSession(params.path, 'full')
+      .run(params.path, params.backend)
       .then(() => response.send({ ok: true }))
       .catch((reason) => response.send({ ok: false, reason: reason }));
   else return { message: 'bad parameters' };
