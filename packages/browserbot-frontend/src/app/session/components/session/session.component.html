@@ -20,6 +20,7 @@
         <button class="bo-button mx-2" (click)="runSession()" title="rerun session">
           <bb-icon name="rerun"></bb-icon>
           RE-RUN
+          <input class="ml-2" type="checkbox" title="frontend isolato" (click)="sessionMocked = !sessionMocked; $event.stopPropagation()">
         </button>
         <button class="bo-button mx-2" title="save as e2e test">
           <bb-icon name="test"></bb-icon>
@@ -62,7 +63,7 @@
     </div>
   </div>
   <bb-popup *ngIf="showVideo" (close)="showVideo= false">
-    <video width="100%" controls >
+    <video width="100%" controls>
       <source src="http://localhost:3005/api/session/video?path={{sessionInfo.sessionPath}}" type="video/webm">
     </video>
   </bb-popup>

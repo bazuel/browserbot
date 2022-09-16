@@ -44,7 +44,7 @@ export class SessionService {
         'http://localhost:3000/api/events?' +
           new URLSearchParams({
             path: path,
-            backend: 'full'
+            backend: 'mock'
           })
       )
     );

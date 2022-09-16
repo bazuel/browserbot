@@ -16,10 +16,10 @@ export class SessionService {
     return await this.httpService.gest<BBSessionInfo>('/session/info-by-id', { id });
   }
 
-  async runSession(path: string) {
+  async runSession(path: string, mocked: boolean) {
     this.httpService.setRootUrl('runner');
     return await this.httpService
-      .gest<{ ok: string }>('/events', { path: path + '.zip', backend: 'full' })
+      .gest<{ ok: string }>('/events', { path: path + '.zip', backend: mocked ? 'mock' : 'full' })
       .then(() => this.httpService.setRootUrl('backend'));
   }
 }

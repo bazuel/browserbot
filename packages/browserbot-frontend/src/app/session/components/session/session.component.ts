@@ -21,6 +21,7 @@ export class SessionComponent implements OnInit {
   } = {};
   imgLoaded = false;
   showVideo = false;
+  sessionMocked = false;
 
   constructor(private urlParamsService: UrlParamsService, private sessionService: SessionService) {}
 
@@ -57,6 +58,6 @@ export class SessionComponent implements OnInit {
   }
 
   async runSession() {
-    await this.sessionService.runSession(this.sessionInfo.sessionPath);
+    await this.sessionService.runSession(this.sessionInfo.sessionPath, this.sessionMocked);
   }
 }
