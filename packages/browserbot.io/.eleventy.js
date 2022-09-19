@@ -5,6 +5,7 @@ const path = require("path")
 const fastglob = require(`fast-glob`); // 11ty uses `fast-glob` internally
 const syntaxHighlight = require("@11ty/eleventy-plugin-syntaxhighlight");
 const pluginRss = require("@11ty/eleventy-plugin-rss");
+const stat = fs.stat
 
 const { promisify } = require("util");
 const execFile = promisify(require("child_process").execFile);

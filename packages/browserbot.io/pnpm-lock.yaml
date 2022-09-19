@@ -4,7 +4,7 @@ specifiers:
   '@11ty/eleventy': ^1.0.1
   '@11ty/eleventy-plugin-rss': ^1.1.2
   '@11ty/eleventy-plugin-syntaxhighlight': ^4.0.0
-  '@butopen/design-system': ^1.1.2
+  '@butopen/design-system': ^1.1.5
   autoprefixer: ^10.4.7
   cssnano: ^5.1.11
   fast-glob: ^3.2.11
@@ -15,7 +15,7 @@ specifiers:
   tailwindcss: ^3.1.1
 
 dependencies:
-  '@butopen/design-system': 1.1.2
+  '@butopen/design-system': 1.1.5
 
 devDependencies:
   '@11ty/eleventy': 1.0.1
@@ -28,7 +28,7 @@ devDependencies:
   postcss-import: 14.1.0_postcss@8.4.14
   postcss-nested: 5.0.6_postcss@8.4.14
   sass: 1.52.3
-  tailwindcss: 3.1.1
+  tailwindcss: 3.1.1_postcss@8.4.14
 
 packages:
 
@@ -126,8 +126,8 @@ packages:
       to-fast-properties: 2.0.0
     dev: true
 
-  /@butopen/design-system/1.1.2:
-    resolution: {integrity: sha512-QRZL7nJYidkdVCrKDDuhfDd3QZwt5Ix/uwYtvgqKliM/1/U42IbBfLO7EF1XTtGuTNlyOEnpKLylayOQwL8VAw==}
+  /@butopen/design-system/1.1.5:
+    resolution: {integrity: sha512-OJdxejfeBzK2o48pf9q0uoS+1Z7lZbyYZVNTVUazhe/ixQAxWimevME5LI56LCsy4YenoWceJgBoH9LtgzF7TA==}
     dev: false
 
   /@iarna/toml/2.2.5:
@@ -2768,10 +2768,12 @@ packages:
     engines: {node: '>=0.10.0'}
     dev: true
 
-  /tailwindcss/3.1.1:
+  /tailwindcss/3.1.1_postcss@8.4.14:
     resolution: {integrity: sha512-F5VFj5FiS4QZqdXPE6T6RJFqbsmISQ2KBUp9bOQyws9TleGToHsa54X8kwXwVdHMQhNeXOlxI47lrRICEVuOvg==}
     engines: {node: '>=12.13.0'}
     hasBin: true
+    peerDependencies:
+      postcss: ^8.0.9
     dependencies:
       arg: 5.0.2
       chokidar: 3.5.3
