@@ -12,7 +12,6 @@ import {
 } from '@browserbot/monitor/src/events';
 import { BBEventWithSerializedTarget } from '@browserbot/model';
 import { locatorFromTarget } from './target-matcher';
-import { BLHTTPResponseEvent } from '@browserbot/monitor/src/http.event';
 
 export const actionWhitelists: { [k: string]: BLEventName[] } = {
   full: [
@@ -36,33 +35,27 @@ export const actionWhitelists: { [k: string]: BLEventName[] } = {
     'mousemove',
     'scroll',
     'contextmenu',
-    //'referrer',
-    'resize',
-    'input'
-    //'after-response',
-    //'local-full',
-    //'session-full',
-    //'cookie-data'
+    'resize'
   ]
 };
 
-export const executeAction: Partial<{ [k in BLEventName]: (a: BLEvent) => Promise<any> }> = {
-  mousedown: executeMouseDown,
-  mouseup: executeMouseUp,
-  elementscroll: executeElementScroll,
-  keyup: executeKeyUp,
-  keydown: executeKeyDown,
-  mousemove: executeMouseMove,
-  scroll: executeScroll,
-  contextmenu: executeRightClick,
-  referrer: executeReferrer,
-  resize: executeResize,
-  input: executeInput,
-  'local-full': setLocalStorage,
-  'session-full': setSessionStorage,
-  'cookie-data': setCookie,
-  'after-response': executeRequest
-};
+export const executeAction: Partial<{ [k in BLEventName]: ((a: BLEvent) => Promise<any>) | null }> =
+  {
+    mousedown: executeMouseDown,
+    mouseup: executeMouseUp,
+    elementscroll: executeElementScroll,
+    keyup: executeKeyUp,
+    keydown: executeKeyDown,
+    mousemove: executeMouseMove,
+    scroll: executeScroll,
+    contextmenu: executeRightClick,
+    referrer: executeReferrer,
+    resize: executeResize,
+    input: executeInput,
+    'local-full': setLocalStorage,
+    'session-full': setSessionStorage,
+    'cookie-data': setCookie
+  };
 
 export async function executeMouseMove(a: BLMouseEvent) {
   await this.page.mouse.move(a.x, a.y);
@@ -88,22 +81,46 @@ export async function executeResize(a: BLWindowResizeEvent) {
 }
 
 export async function executeInput(a: BBEventWithSerializedTarget<BLInputChangeEvent>) {
-  await locatorFromTarget(a.target, this.page).then(async (locator) => await locator.fill(a.value));
+  //TODO: PEZZA: aggiunta pezza del keyup/keydown quando input non trova elemento. (comportamento randomico)
+
+  await locatorFromTarget(a.target, this.page).then(
+    async (locator) =>
+      await locator
+        .type(a.value, { timeout: 1000 })
+        .catch(async () => {
+          // catch only if key is unknown (then execute input on that character)
+          if (this.lastAction.name == 'keyup') {
+            await executeAction.keyup.apply(this, [this.lastAction]);
+          }
+          if (this.nextAction.name == 'keyup') {
+            await executeAction.keyup.apply(this, [this.nextAction]);
+          }
+        })
+        .finally(() => console.log(a))
+  );
   this.takeAction = this.nextAction?.name != 'input';
 }
 
 export async function executeKeyUp(a: BBEventWithSerializedTarget<BLKeyboardEvent>) {
-  if (a.target.tag != 'input' || a.key == 'Enter' || a.key == 'Control' || a.modifier == 'ctrl') {
-    await this.page.keyboard.up(a.key);
-    this.takeAction = false;
-  }
+  await this.page.keyboard.up(a.key).catch((reason) => console.log(reason));
+  this.takeAction = false;
 }
 
 export async function executeKeyDown(a: BBEventWithSerializedTarget<BLKeyboardEvent>) {
-  if (a.target.tag != 'input' || a.key == 'Enter' || a.key == 'Control' || a.modifier == 'ctrl') {
-    await this.page.keyboard.down(a.key);
-    this.takeAction = false;
-  }
+  //TODO: per ora è una pezza. ma funziona
+  if (a.key == '@') await this.page.keyboard.insertText('@');
+  await this.page.keyboard.down(a.key).catch(async () => {
+    // catch only if key is unknown (then execute input on that character)
+    if (this.lastAction.name == 'input') {
+      this.lastAction.value = this.lastAction.value.slice(-1);
+      await executeAction.input.apply(this, [this.lastAction]);
+    }
+    if (this.nextAction.name == 'input') {
+      this.nextAction.value = this.nextAction.value.slice(-1);
+      await executeAction.input.apply(this, [this.nextAction]);
+    }
+  });
+  this.takeAction = false;
 }
 
 export async function executeReferrer(a: BLPageReferrerEvent) {
@@ -135,33 +152,6 @@ export async function executeElementScroll(action: BBEventWithSerializedTarget<B
     locator.evaluate((elem, action) => elem.scroll(action.x, action.y), action)
   );
   this.takeAction = true;
-}
-
-export async function executeRequest(action: BLHTTPResponseEvent) {
-  let requestContext = this.page.request;
-  let request = action.request;
-  let headers = {};
-  Object.keys(action.request.headers).forEach((h) => (headers[h] = action.request.headers[h][0]));
-  headers['timestamp-mock-browserbot'] = action.request.timestamp.toString();
-  console.log(action.request.url);
-  if (action.request.method == 'GET') {
-    return await requestContext.get(request.url, {
-      headers: headers
-    });
-  } else if (action.request.method == 'POST') {
-    return await requestContext.post(request.url, {
-      data: request.body,
-      headers: headers
-    });
-    /*} else if (action.request.method == 'DELETE') {
-      console.log(action.request.method + "not handled")
-    } else if (action.request.method == 'PUT') {
-      console.log(action.request.method + "not handled")
-    } else if (action.request.method == 'FETCH') {
-      console.log(action.request.method + "not handled")
-    } else {
-      console.log(action.request.method + "not handled")*/
-  }
 }
 
 export async function setLocalStorage(action: BLStorageEvent) {
