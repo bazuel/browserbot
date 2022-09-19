@@ -1,0 +1,76 @@
+
+
+/* inter-900 - latin 
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 900;
+  src: local(''),
+  url('/assets/fonts/inter-v7-latin-900.woff2') format('woff2'), /*
+  url('/assets/fonts/inter-v7-latin-900.woff') format('woff'); /*
+}
+
+*/
+/* caveat-900 - latin 
+@font-face {
+  font-family: 'Caveat';
+  font-style: normal;
+  font-weight: 400;
+  src: local(''),
+  url('/assets/fonts/Caveat-Regular.woff2') format('woff2')
+}
+*/
+/* roboto-300 - latin 
+@font-face {
+  font-family: 'Roboto';
+  font-style: normal;
+  font-weight: 300;
+  src: url('/assets/fonts/roboto-v29-latin-300.eot'); 
+  src: local(''),
+  url('/assets/fonts/roboto-v29-latin-300.eot?#iefix') format('embedded-opentype'), 
+  url('/assets/fonts/roboto-v29-latin-300.woff2') format('woff2'), 
+  url('/assets/fonts/roboto-v29-latin-300.woff') format('woff'), 
+  url('/assets/fonts/roboto-v29-latin-300.ttf') format('truetype'), 
+  url('/assets/fonts/roboto-v29-latin-300.svg#Roboto') format('svg'); 
+}*/
+/* roboto-regular - latin 
+@font-face {
+  font-family: 'Roboto';
+  font-style: normal;
+  font-weight: 400;
+  src: url('/assets/fonts/roboto-v29-latin-regular.eot'); 
+  src: local(''),
+  url('/assets/fonts/roboto-v29-latin-regular.eot?#iefix') format('embedded-opentype'), 
+  url('/assets/fonts/roboto-v29-latin-regular.woff2') format('woff2'), 
+  url('/assets/fonts/roboto-v29-latin-regular.woff') format('woff'), 
+  url('/assets/fonts/roboto-v29-latin-regular.ttf') format('truetype'), 
+  url('/assets/fonts/roboto-v29-latin-regular.svg#Roboto') format('svg'); 
+}*/
+/* roboto-900 - latin 
+@font-face {
+  font-family: 'Roboto';
+  font-style: normal;
+  font-weight: 900;
+  src: url('/assets/fonts/roboto-v29-latin-900.eot'); 
+  src: local(''),
+  url('/assets/fonts/roboto-v29-latin-900.eot?#iefix') format('embedded-opentype'), 
+  url('/assets/fonts/roboto-v29-latin-900.woff2') format('woff2'), 
+  url('/assets/fonts/roboto-v29-latin-900.woff') format('woff'), 
+  url('/assets/fonts/roboto-v29-latin-900.ttf') format('truetype'), 
+  url('/assets/fonts/roboto-v29-latin-900.svg#Roboto') format('svg'); 
+}*/
+
+
+/* audiowide-regular - latin */
+@font-face {
+  font-family: 'Audiowide';
+  font-style: normal;
+  font-weight: 400;
+  src: url('../fonts/audiowide-v16-latin-regular.eot'); 
+  src: local(''),
+  url('../fonts/audiowide-v16-latin-regular.eot?#iefix') format('embedded-opentype'), 
+  url('../fonts/audiowide-v16-latin-regular.woff2') format('woff2'), 
+  url('../fonts/audiowide-v16-latin-regular.woff') format('woff'), 
+  url('../fonts/audiowide-v16-latin-regular.ttf') format('truetype'), 
+  url('../fonts/audiowide-v16-latin-regular.svg#Audiowide') format('svg'); 
+}
