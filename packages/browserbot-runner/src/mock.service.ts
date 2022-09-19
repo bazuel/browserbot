@@ -50,7 +50,7 @@ export class MockService {
         for (const key in mockData.sessionStorage) {
           sessionStorage.setItem(key, mockData.sessionStorage[key]);
         }
-        window.setMockStorageTrue();
+        await window.setMockStorageTrue();
       }
     }, data);
     return jsonEvents;
@@ -75,7 +75,7 @@ export class MockService {
               const __DateNowOffset = fakeNow - Date.now();
               const __DateNow = Date.now;
               Date.now = () => __DateNow() + __DateNowOffset;
-              window.setMockDateTrue()
+              await window.setMockDateTrue()
          })()
       }`);
   }
