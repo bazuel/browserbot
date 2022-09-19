@@ -94,7 +94,9 @@ export type BLEventName =
   | "session-start"
   | "user-email"
   | "user-start"
-  | "user-stop";
+  | "user-stop"
+  | "storage"
+  | "device";
 
 export interface BLEvent {
   name: BLEventName;
@@ -164,7 +166,7 @@ export type BLPageReferrerEvent = BLEvent & { referrer: string };
 export type BLNetworkEvent = BLEvent & { online: boolean };
 export type BLPageAdressEvent = BLEvent & { address: string };
 export type BLPageHashEvent = BLEvent & { hash: string };
-export type BLKeyboardEvent = BLEvent & {
+export type BLKeyboardEvent = BLEventWithTarget & {
   code: string;
   key: string;
   locale: string;

@@ -42,10 +42,10 @@ export class InputMonitor implements BLMonitor {
                 if (target)
                     checked.set(target, {target: target, checked: (target as HTMLInputElement)?.checked});
             } else {
-                let text = (target as HTMLInputElement)?.value;
+                let text = (target as HTMLInputElement)?.value;/*
                 if (type === 'password') {
                     text = text.replace(/./g, '*');
-                }
+                }*/
                 if (target)
                     inputs.set(target, {target: target, value: text});
             }

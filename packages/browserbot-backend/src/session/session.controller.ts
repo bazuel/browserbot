@@ -15,7 +15,7 @@ export class SessionController {
 
   @Get('download')
   async download(
-    @Res({ passthrough: true }) res: Response,
+    @Res({ passthrough: true }) res,
     @Query('path') path,
   ) {
     const stream = await this.sessionService.sessionStream(path);

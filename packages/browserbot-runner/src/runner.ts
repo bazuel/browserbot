@@ -1,20 +1,20 @@
-import { strFromU8, unzip } from 'fflate';
+import {strFromU8, unzip} from 'fflate';
 import fs from 'fs';
+import {Browser, chromium, Page} from 'playwright';
+import {ConfigService, StorageService} from '@browserbot/backend-shared';
 import {
-  BBAction,
-  BBDeviceInformationAction,
-  BBGotoAction,
-  BBInputAction,
-  BBMouseMoveAction,
-  BBReferrerAction,
-  BBResizeAction,
-  BBScrollAction,
-  BBWaitAction
-} from '@browserbot/model';
-import { Browser, chromium, Page } from 'playwright';
-import { ConfigService, StorageService } from '@browserbot/backend-shared';
+  BLEvent,
+  BLHTTPResponseEvent,
+  BLInputChangeEvent, BLKeyboardEvent,
+  BLMouseEvent,
+  BLPageReferrerEvent,
+  BLScrollEvent, BLStorageEvent,
+  BLWindowResizeEvent
+} from "@browserbot/monitor/src/events";
+import {BBEventWithTarget} from "@browserbot/model";
 
 const storageService = new StorageService(new ConfigService());
+
 declare global {
   interface Window {
     blSerializer: any;
@@ -29,79 +29,90 @@ export class Runner {
   referrer: string;
   serializerScript: string;
   uploadPath: string;
+  private lastAction: BLEvent;
+  private takeScreenshot: boolean;
+  private speed: number = 1;
+  private actionWhitelist = ["elementscroll", "keyup", "keydown", "mousemove", "scroll", "click", "contextmenu", "wait", "goto", "referrer", "resize", "device", "input", "after-response"]
+  private nextAction: BLEvent;
 
   constructor() {
     this.serializerScript = fs.readFileSync('./scripts/index.serializer.js', 'utf8');
     this.useragent =
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.88 Safari/537.36';
-    this.viewport = { width: 1280, height: 619 };
+    this.viewport = {width: 1280, height: 619};
     this.referrer = 'https://www.google.com/';
   }
 
   async runSession(path: string) {
     this.uploadPath = path.replace('.zip', '');
     const actionsZip = await storageService.read(path);
-    this.browser = await chromium.launch({ channel: 'chrome', headless: false });
+    this.browser = await chromium.launch({channel: 'chrome', headless: false});
 
     unzip(new Uint8Array(actionsZip), async (err, data) => {
       for (let f in data) {
         const raw = strFromU8(data[f]);
-        const jsonEvents: BBAction[] = JSON.parse(raw);
+        let jsonEvents: BLEvent[] = JSON.parse(raw);
 
         this.page = await (await this.setupContext(jsonEvents)).newPage();
-        await this.goto(jsonEvents);
-        for (let action of jsonEvents) {
-          await this.runAction(action);
+        await this.setInitialPage(jsonEvents);
+        jsonEvents = jsonEvents.filter(e => this.actionWhitelist.includes(e.name))
+        for (let i = 0; i < jsonEvents.length; i++) {
+          this.takeScreenshot = false
+          this.lastAction = jsonEvents[i - 1]
+          this.nextAction = jsonEvents[i + 1]
+          await this.runAction(jsonEvents[i]);
         }
-        await this.injectSerializerScript();
-        // await this.browser.close();
+        await this.browser.close().then(_ => console.log("session-ended gracefully"));
       }
     });
   }
 
-  private async runAction(a: BBAction) {
-    console.log(a);
-    await this.page.waitForTimeout(1000);
-    if (a.name === 'referrer') {
-      await this.executeReferrer(a);
-    } else if (a.name === 'mousemove') {
-      await this.executeMouseMove(a);
-    } else if (a.name === 'mousedown') {
-      await this.executeMouseDown(a);
-    } else if (a.name === 'mouseup') {
-      await this.executeMouseUp(a);
-    } else if (a.name === 'scroll') {
-      await this.executeScroll(a);
-    } else if (a.name === 'wait') {
-      await this.executeWait(a);
-    } else if (a.name === 'resize') {
-      await this.executeResize(a);
-    } else if (a.name === 'input') {
-      await this.executeInput(a as BBInputAction);
-    } else {
-      console.log(a.name, ': non gestito');
+  private async runAction(action: BLEvent | any) {
+    console.log(action)
+    if (this.lastAction) await this.page.waitForTimeout(
+      (action.timestamp - this.lastAction.timestamp) * this.speed);
+    if (action.name === 'input') {
+      await this.executeInput(action);
+    } else if (action.name === 'mousemove') {
+      await this.executeMouseMove(action);
+    } else if (action.name === 'contextmenu') {
+      await this.executeRightClick(action);
+    } else if (action.name === 'click') {
+      await this.executeClick(action);
+    } else if (action.name === 'keyup') {
+      await this.executeKeyUp(action);
+    } else if (action.name === 'keydown') {
+      await this.executeKeyDown(action);
+    } else if (action.name === 'scroll') {
+      await this.executeScroll(action);
+    } else if (action.name === 'resize') {
+      await this.executeResize(action);
+    } else if (action.name === 'referrer') {
+      await this.executeReferrer(action);
+    } else if (action.name === 'elementscroll') {
+      await this.executeElementScroll(action);
     }
-
-    //const buffer = await this.page.screenshot();
-    //await storageService.upload(buffer, `${this.uploadPath}-${a.name}`);
+    if (this.takeScreenshot) {
+      /*const buffer = await this.page.screenshot();
+      await storageService.upload(buffer, `${this.uploadPath}/${action.name}/${action.timestamp}`);*/
+    }
   }
 
-  private async setupContext(jsonEvents) {
-    if (jsonEvents.filter((a: BBAction) => a.name === 'resize')[0]) {
+  private async setupContext(jsonEvents: BLEvent[]) {
+    let resizeAction = jsonEvents.filter((a) => a.name === 'resize')[0] as BLWindowResizeEvent
+    let deviceAction = jsonEvents.filter((a) => a.name === 'device')[0] as BLEvent & { userAgent }
+    let referrerAction = jsonEvents.filter((a) => a.name === 'referrer')[0] as BLPageReferrerEvent
+    if (resizeAction) {
       this.viewport = {
-        width: (jsonEvents.filter((a) => a.name === 'resize')[0] as BBResizeAction).width,
-        height: (jsonEvents.filter((a) => a.name === 'resize')[0] as BBResizeAction).height
+        width: resizeAction.width,
+        height: resizeAction.height
       };
     }
-    if (jsonEvents.filter((a) => a.name === 'device')[0]) {
-      this.useragent = (
-        jsonEvents.filter((a) => a.name === 'device')[0] as BBDeviceInformationAction
-      ).userAgent;
+    if (deviceAction) {
+      this.useragent = deviceAction.userAgent;
     }
-    if (jsonEvents.filter((a) => a.name === 'referrer')[0]) {
-      this.referrer = (
-        jsonEvents.filter((a) => a.name === 'referrer')[0] as BBReferrerAction
-      ).referrer;
+    if (referrerAction) {
+      this.referrer = referrerAction.referrer;
     }
     return await this.browser.newContext({
       viewport: this.viewport,
@@ -109,14 +120,10 @@ export class Runner {
     });
   }
 
-  private async goto(jsonEvents) {
+  private async setInitialPage(jsonEvents) {
     try {
       await this.page.goto(
-        (
-          jsonEvents.filter((a) => a.name === 'goto' || a.name === 'referrer')[0] as
-            | BBReferrerAction
-            | BBGotoAction
-        ).url,
+        (jsonEvents.filter((a) => a.name === 'referrer')[0] as BLPageReferrerEvent & { url }).url,
         {
           referer: this.referrer,
           waitUntil: 'domcontentloaded'
@@ -127,51 +134,111 @@ export class Runner {
         if (this.browser) {
           await this.browser.close();
         }
-      } catch (e) {}
+      } catch (e) {
+      }
       throw new Error('goto action not found');
     }
   }
 
-  private async executeMouseMove(a: BBAction) {
-    let mm = a as BBMouseMoveAction;
-    await this.page.mouse.move(mm.x, mm.y);
+  private async executeMouseMove(a: BLMouseEvent) {
+    await this.page.mouse.move(a.x, a.y);
+    this.takeScreenshot = this.nextAction?.name != 'mousemove'
   }
 
-  private async executeMouseDown(a: BBAction) {
-    await this.page.mouse.down();
-  }
-
-  private async executeMouseUp(a: BBAction) {
-    await this.page.mouse.up();
-  }
-
-  private async executeScroll(a: BBAction) {
-    let s = a as BBScrollAction;
-    let coordinates = { x: s.x, y: s.y };
+  private async executeScroll(a: BLScrollEvent) {
+    let coordinates = {x: a.x, y: a.y};
     await this.page.evaluate(
       (coordinates) => window.scroll(coordinates.x, coordinates.y),
       coordinates
     );
+    this.takeScreenshot = true
   }
 
-  private async executeWait(a: BBAction) {
-    await this.page.waitForTimeout((a as BBWaitAction).timeout);
-  }
-
-  private async executeResize(a: BBAction) {
+  private async executeResize(a: BLWindowResizeEvent) {
     this.viewport = {
-      width: (a as BBResizeAction).width,
-      height: (a as BBResizeAction).height
+      width: a.width,
+      height: a.height
     };
     await this.page.setViewportSize(this.viewport);
+    this.takeScreenshot = true
   }
 
-  private async executeReferrer(a: BBAction) {
-    let r = a as BBReferrerAction;
-    await this.page.goto(r.url, {
-      referer: this.referrer,
+  private async executeInput(a: BBEventWithTarget<BLInputChangeEvent>) {
+    await this.page.fill(a.targetSelector, a.value)
+    this.takeScreenshot = this.nextAction?.name != 'input'
+  }
+
+  private async executeKeyUp(a: BBEventWithTarget<BLKeyboardEvent>) {
+    if (!a.targetSelector.includes('input')
+      || a.key == 'Enter'
+      || a.key == 'Control'
+      || a.modifier == 'ctrl') {
+      await this.page.keyboard.up(a.key)
+      this.takeScreenshot = true
+    }
+  }
+
+  private async executeKeyDown(a: BBEventWithTarget<BLKeyboardEvent>) {
+    if (!a.targetSelector.includes('input')
+      || a.key == 'Enter'
+      || a.key == 'Control'
+      || a.modifier == 'ctrl') {
+      await this.page.keyboard.down(a.key)
+      this.takeScreenshot = false
+    }
+  }
+
+  private async executeReferrer(a: BLPageReferrerEvent & { url }) {
+    await this.page.goto(a.url, {
       waitUntil: 'domcontentloaded'
     });
+    this.takeScreenshot = true
+  }
+
+  private async executeRightClick(a: BBEventWithTarget<BLMouseEvent>) {
+    await this.page.click(a.targetSelector, {button: "right"})
+    this.takeScreenshot = true
+  }
+
+  private async executeClick(a: BBEventWithTarget<BLMouseEvent>) {
+    await this.page.click(a.targetSelector, {button: "left"})
+    this.takeScreenshot = true
+  }
+
+  private async executeElementScroll(action: BBEventWithTarget<BLScrollEvent>) {
+    await this.page.evaluate((action) => {
+      console.log(document.querySelectorAll(action.targetSelector))
+      let selectedElement = document.querySelectorAll(action.targetSelector)[0]
+      selectedElement.scroll(action.x, action.y)
+      return selectedElement
+    }, action)
+    this.takeScreenshot = true;
+  }
+
+  async executeRequest(action: BLHTTPResponseEvent) {
+    let requestContext = this.page.request
+    let request = action.request
+    let headers = {}
+    Object.keys(action.request.headers).forEach(h => headers[h] = action.request.headers[h][0])
+    if (action.request.method == 'GET') {
+      return await requestContext.get(request.url, {
+        headers: headers
+      })
+    } else if (action.request.method == 'POST') {
+      return await requestContext.post(request.url, {
+        data: request.body,
+        headers: headers
+      })
+    }
+  }
+
+  private async setStorage(action: BLStorageEvent) {
+    let storage = action.storage
+    for (const name of Object.keys(storage)) {
+      let value = storage[name]
+      await this.page.evaluate(() => localStorage.setItem(name, value))
+    }
+    console.log(await this.page.evaluate(() => JSON.stringify(localStorage)))
   }
 
   private async injectSerializerScript() {
@@ -184,20 +251,5 @@ export class Runner {
     const domJson = await this.page.evaluate(() => {
       return new window.blSerializer.ElementSerializer().serialize(document);
     });
-  }
-
-  private async executeInput(a: BBInputAction) {
-    /*
-    let selector = a.targetSelector.split('.')[0];
-    let selectorTypes: string[] = a.targetSelector
-      .split('[')
-      .filter((t) => t.includes('type') || t.includes('name'))
-      .map((s) => s.split('"')[0]);
-    let selectorTypesValue: string[] = a.targetSelector
-      .split('[')
-      .filter((t) => t.includes('type') || t.includes('name'))
-      .map((s) => s.split('"')[1]);
-    let resultSelector = selectorTypes;*/
-    await this.page.keyboard.insertText(a.value);
   }
 }

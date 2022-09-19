@@ -29,6 +29,7 @@
     "@playwright/test": "^1.25.1"
   },
   "devDependencies": {
+    "@browserbot/monitor": "link:..\\browserbot-monitor",
     "@types/jest": "27.5.0",
     "@types/node": "^16.11.56",
     "esbuild": "^0.15.5",

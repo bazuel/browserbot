@@ -4,6 +4,7 @@ specifiers:
   '@aws-sdk/client-ses': ^3.154.0
   '@browserbot/backend-shared': link:..\browserbot-backend-shared
   '@browserbot/model': link:..\browserbot-model
+  '@browserbot/monitor': link:..\browserbot-monitor
   '@fastify/multipart': ^7.1.0
   '@playwright/test': ^1.25.1
   '@types/jest': 27.5.0
@@ -41,6 +42,7 @@ dependencies:
   postgres: 3.2.4
 
 devDependencies:
+  '@browserbot/monitor': link:../browserbot-monitor
   '@types/jest': 27.5.0
   '@types/node': 16.11.56
   esbuild: 0.15.5

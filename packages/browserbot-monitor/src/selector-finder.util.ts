@@ -15,8 +15,9 @@ export class ElementSelectorFinder {
     let selector = flatSelector(element) + nthChild(element);
     let foundElements = element.ownerDocument.querySelectorAll(selector);
     while (foundElements.length > 1 && element.parentElement) {
+      element = element.parentElement
       let parentSelector =
-        flatSelector(element.parentElement) + nthChild(element.parentElement);
+        flatSelector( element) + nthChild(element);
       selector = `${parentSelector} > ${selector}`;
       foundElements = element.ownerDocument.querySelectorAll(selector);
     }
@@ -43,12 +44,12 @@ function nthChild(element: Element) {
 
 function attributes(
   element: Element,
-  attributesToIgnore = ["id", "class", "length"]
+  attributesWhiteList = ["name", " value", "title", "for", "type"]
 ) {
   const attributesSelector: string[] = [];
   const { attributes } = element;
   for (let a of Array.from(attributes)) {
-    if (!(attributesToIgnore.indexOf(a.nodeName.toLowerCase()) > -1)) {
+    if (attributesWhiteList.indexOf(a.nodeName.toLowerCase()) > -1) {
       attributesSelector.push(
         `[${a.nodeName.toLowerCase()}${a.value ? `="${a.value}"` : ""}]`
       );
@@ -62,7 +63,7 @@ function attributes(
  * @param element
  */
 function flatSelector(element: Element) {
-  return tag(element) + id(element) + classes(element) + attributes(element);
+  return tag(element) + id(element) + attributes(element) + classes(element);
 }
 
 function classes(element: Element) {
@@ -73,7 +74,7 @@ function classes(element: Element) {
       // return only the valid CSS selectors based on RegEx
       classSelectorList = classList.filter((item) =>
         !/^[a-z_-][a-z\d_-]*$/i.test(item) ? null : item
-      );
+      ).filter(item => !item.includes('ng'))
     } catch (e) {
       let className = element.getAttribute("class") ?? "";
       // remove duplicate and leading/trailing whitespaces

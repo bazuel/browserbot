@@ -1,9 +1,6 @@
 import {
-  BLEvent,
   blevent,
-  BLEventWithTarget,
   CookieMonitor,
-  ElementSelectorFinder,
   HttpMonitor,
   InputMonitor,
   InputValueMonitor,
@@ -12,7 +9,11 @@ import {
   PageMonitor,
   ScrollMonitor,
   StorageMonitor,
-  WindowResizeMonitor
+  WindowResizeMonitor,
+  getElementRect,
+  getElementAttributes,
+  BLEventWithTarget,
+  ElementSelectorFinder
 } from '@browserbot/monitor';
 
 function sendToExtension(event) {
@@ -28,13 +29,31 @@ const selector = (e) => {
 };
 
 export function targetToSelectors(e: BLEventWithTarget) {
-  const targetSelector = e.target ? selector(e.target) : '';
-  const currentTargetSelector = e.currentTarget ? selector(e.currentTarget) : '';
+  // used only for document element (scroll event)
+  const targetSelector = e.target ? selector(e.target) : ''; //it's a selector. a string
+  const currentTargetSelector = e.currentTarget ? selector(e.currentTarget) : ''; //it's a selector. a string
   const { target, currentTarget, ...evt } = e as any; // removes target and currentTarget from the event since we have
   return { ...evt, targetSelector, currentTargetSelector };
 }
+
+//used only for document "element" (mousescroll)
 function sendEventWithTargetToExtension(event) {
   sendToExtension(targetToSelectors(event));
+}
+
+async function sendEventWithSerializedTargetToExtension(event) {
+  const rect = await getElementRect(event.target);
+  const attributes = getElementAttributes(event.target);
+  const { target, currentTarget, ...evt } = event as any;
+  sendToExtension({
+    ...evt,
+    target: {
+      rect,
+      attributes,
+      tag: event.target.tagName,
+      innerText: event.target.innerText ?? ''
+    }
+  });
 }
 
 const monitors = [
@@ -49,14 +68,16 @@ const monitors = [
   new WindowResizeMonitor()
 ];
 
-Object.keys(blevent.mouse).forEach((me) => blevent.mouse[me].on(sendEventWithTargetToExtension));
+Object.keys(blevent.mouse).forEach((me) => {
+  if (me != 'scroll') blevent.mouse[me].on(sendEventWithSerializedTargetToExtension);
+  else blevent.mouse[me].on(sendEventWithTargetToExtension);
+});
+
 blevent.cookie.data.on(sendToExtension);
 
-blevent.keyboard.input.on(sendEventWithTargetToExtension);
-blevent.keyboard.value.on(sendEventWithTargetToExtension);
-blevent.keyboard.checked.on(sendEventWithTargetToExtension);
-blevent.keyboard.up.on(sendToExtension);
-blevent.keyboard.down.on(sendToExtension);
+Object.keys(blevent.keyboard).forEach((ke) => {
+  blevent.keyboard[ke].on(sendEventWithSerializedTargetToExtension);
+});
 
 Object.keys(blevent.page).forEach((me) => blevent.page[me].on(sendToExtension));
 Object.keys(blevent.window).forEach((me) => blevent.window[me].on(sendToExtension));
@@ -110,6 +131,7 @@ function enable() {
   httpMonitor.enable();
   monitors.forEach((m) => m.enable());
 }
+
 enable();
 
 function disable() {
@@ -128,6 +150,5 @@ window.browserbot = { disable, version: '1.0.6' };
  */
 
 window.addEventListener('message', function (event) {
-  if(event.data.type == "stop-recording")
-    disable()
+  if (event.data.type == 'stop-recording') disable();
 });

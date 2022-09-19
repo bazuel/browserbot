@@ -19,7 +19,7 @@ export const BBRoleLabels: { [role in BBRole]: string } = {
 };
 export const BBRoleLabelsArray: { role: BBRole; label: string }[] = [];
 for (const r in BBRoleLabels)
-  BBRoleLabelsArray.push({ role: r as BBRole, label: BBRoleLabels[r] });
+  BBRoleLabelsArray.push({role: r as BBRole, label: BBRoleLabels[r]});
 
 export interface BBTeam {
   teamid?: string;
@@ -44,54 +44,4 @@ export interface BBSession {
   owner?: BBUser;
 }
 
-export interface BBAction {
-  name:
-    | "mousemove"
-    | "scroll"
-    | "mouseup"
-    | "mousedown"
-    | "wait"
-    | "goto"
-    | "referrer"
-    | "resize"
-    | "device"
-    | "input";
-}
-
-export interface BBDeviceInformationAction extends BBAction {
-  userAgent: string;
-}
-
-export interface BBInputAction extends BBAction {
-  targetSelector: string;
-  value: string;
-}
-
-export interface BBGotoAction extends BBAction {
-  url: string;
-}
-
-export interface BBMouseMoveAction extends BBAction {
-  x: number;
-  y: number;
-  moves: { x: number; y: number; at: number }[];
-}
-
-export interface BBScrollAction extends BBAction {
-  x: number;
-  y: number;
-}
-
-export interface BBWaitAction extends BBAction {
-  timeout: number;
-}
-
-export interface BBResizeAction extends BBAction {
-  width: number;
-  height: number;
-}
-
-export interface BBReferrerAction extends BBAction {
-  referrer: string;
-  url: string;
-}
+export type BBEventWithTarget<T> = T & { targetSelector?: string, key?: string, value?: string }
