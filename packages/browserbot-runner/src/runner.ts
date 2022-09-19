@@ -12,7 +12,6 @@ const storageService = new StorageService(new ConfigService());
 declare global {
   interface Window {
     blSerializer: any;
-    __browserbot: { dataMocked: boolean; storageMocked: boolean };
     controlMock: () => Promise<{ date: boolean; storage: boolean }>;
     setMockDateTrue: () => void;
     setMockStorageTrue: () => void;
@@ -50,11 +49,10 @@ export class Runner {
     this.addPositionSelector().then((_) => console.log('Context ready'));
   }
 
-  async run(path: string, backendType: 'full' | 'mock') {
-    this.sessionType = backendType;
+  async run(path: string, sessionType: 'full' | 'mock') {
+    this.sessionType = sessionType;
     this.sessionInfo.sessionPath = path.replace('.zip', '');
     const actionsZip = await storageService.read(path);
-    this.browser = await chromium.launch({ channel: 'chrome', headless: false });
     unzip(new Uint8Array(actionsZip), async (err, data) => {
       await this.runSession(data);
     });
@@ -80,7 +78,9 @@ export class Runner {
     jsonEvents = await this.setupPage(jsonEvents);
     if (this.page.url().includes('www.google.com/search?q='))
       await this.page.locator('button:has-text("Accetta tutto")').click();
-    return jsonEvents.filter((e) => actionWhitelists[this.sessionType].includes(e.name));
+    //TODO pezza
+    if (jsonEvents[0].name == 'input') jsonEvents.shift();
+    return jsonEvents;
   }
 
   private async setupMock(jsonEvents: BLEvent[]) {
@@ -96,10 +96,12 @@ export class Runner {
   private async runAction(action: BLEvent) {
     this.takeAction = false;
     if (this.sessionType == 'mock') this.mockService.actualTimestamp = action.timestamp;
-    await this.wait(action);
-    await executeAction[action.name].apply(this, [action]);
-    if (this.takeAction) {
-      await this.takeShot(action);
+    if (actionWhitelists[this.sessionType].includes(action.name)) {
+      await this.wait(action);
+      await executeAction[action.name].apply(this, [action]);
+      if (this.takeAction) {
+        //await this.takeShot(action);
+      }
     }
   }
 
@@ -122,6 +124,7 @@ export class Runner {
     if (deviceAction) {
       this.useragent = deviceAction.userAgent;
     }
+    this.browser = await chromium.launch({ channel: 'chrome', headless: false });
     return await this.browser.newContext({
       viewport: this.viewport,
       userAgent: this.useragent,
@@ -152,12 +155,12 @@ export class Runner {
       dimension: this.page.viewportSize()
     });
     //for DOM snapshots
-    /*await this.takeDom().then((domJson) => {
+    await this.takeDom().then((domJson) => {
       storageService.upload(Buffer.from(JSON.stringify(domJson)), this.filename + '.json');
     });
     this.sessionInfo.domShots.push({
       filename: this.filename + '.json'
-    });*/
+    });
   }
 
   private async takeDom() {
