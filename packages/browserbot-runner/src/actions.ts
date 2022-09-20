@@ -35,7 +35,8 @@ export const actionWhitelists: { [k: string]: BLEventName[] } = {
     'mousemove',
     'scroll',
     'contextmenu',
-    'resize'
+    'resize',
+    'input'
   ]
 };
 
@@ -80,29 +81,34 @@ export async function executeResize(a: BLWindowResizeEvent) {
   this.takeAction = true;
 }
 
-export async function executeInput(a: BBEventWithSerializedTarget<BLInputChangeEvent>) {
+export async function executeInput(
+  a: BBEventWithSerializedTarget<BLInputChangeEvent>,
+  forceExecution = false
+) {
   //TODO: keyup/keydown quando input non trova elemento.
-
-  await locatorFromTarget(a.target, this.page).then(
-    async (locator) =>
-      await locator
-        .type(a.value, { timeout: 1000 })
-        .catch(async () => {
-          if (this.lastAction.name == 'keydown') {
-            for (const word of a.value) {
-              await executeAction.keydown.apply(this, [{ key: word }]);
-              await executeAction.keyup.apply(this, [{ key: word }]);
+  if (forceExecution)
+    await locatorFromTarget(a.target, this.page).then(
+      async (locator) =>
+        await locator
+          .type(a.value, { timeout: 1000 })
+          .then(() => log('switch from key to input:', a.value))
+    );
+  else if (!this.lastAction.name.includes('key') && !this.nextAction.name.includes('key')) {
+    await locatorFromTarget(a.target, this.page).then(
+      async (locator) =>
+        await locator
+          .fill(a.value, { timeout: 1000 })
+          .catch(async () => {
+            if (this.lastAction.name == 'keydown' || this.nextAction.name == 'keydown') {
+              for (const word of a.value) {
+                await executeAction.keydown.apply(this, [{ key: word }]);
+                await executeAction.keyup.apply(this, [{ key: word }]);
+              }
             }
-          }
-          if (this.nextAction.name == 'keydown') {
-            for (const word of a.value) {
-              await executeAction.keydown.apply(this, [{ key: word }]);
-              await executeAction.keyup.apply(this, [{ key: word }]);
-            }
-          }
-        })
-        .finally(() => log(a))
-  );
+          })
+          .finally(() => log('swith from input to key:', a.value))
+    );
+  }
   this.takeAction = this.nextAction?.name != 'input';
 }
 
@@ -118,11 +124,11 @@ export async function executeKeyDown(a: BBEventWithSerializedTarget<BLKeyboardEv
     // catch only if key is unknown (then execute input on that character)
     if (this.lastAction.name == 'input') {
       this.lastAction.value = this.lastAction.value.slice(-1);
-      await executeAction.input.apply(this, [this.lastAction]);
+      await executeAction.input.apply(this, [this.lastAction, true]);
     }
     if (this.nextAction.name == 'input') {
       this.nextAction.value = this.nextAction.value.slice(-1);
-      await executeAction.input.apply(this, [this.nextAction]);
+      await executeAction.input.apply(this, [this.nextAction, true]);
     }
   });
   this.takeAction = false;
