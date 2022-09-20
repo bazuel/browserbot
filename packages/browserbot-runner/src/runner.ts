@@ -54,9 +54,9 @@ export class Runner {
     log('runner.ts: run: unzip');
     unzip(new Uint8Array(actionsZip), async (err, data) => {
       try {
-        //await this.runSession(data, 'video').catch((e) => log(e));
+        await this.runSession(data, 'video').catch((e) => log(e));
         await this.runSession(data, 'screenshot').catch((e) => log(e));
-        //await this.runSession(data, 'dom').catch((e) => log(e));
+        await this.runSession(data, 'dom').catch((e) => log(e));
         log('runner.ts: run: jsonUpload');
         await this.uploadInfoJson();
         log('session ended gracefully');
@@ -109,7 +109,7 @@ export class Runner {
     this.takeAction = false;
     if (this.backendType == 'mock') this.mockService.actualTimestamp = action.timestamp;
     if (actionWhitelists[this.backendType].includes(action.name)) {
-      await this.wait(action);
+      if (this.sessionType == 'video') await this.wait(action);
       await executeAction[action.name].apply(this, [action]);
       if (this.takeAction && this.sessionType != 'video') {
         await this.takeShot(action);
@@ -136,7 +136,10 @@ export class Runner {
     if (deviceAction) {
       this.useragent = deviceAction.userAgent;
     }
-    this.browser = await chromium.launch({ channel: 'chrome', headless: false });
+    this.browser = await chromium.launch({
+      channel: 'chrome',
+      headless: this.sessionType != 'video'
+    });
     if (this.sessionType == 'video')
       return await this.browser.newContext({
         viewport: this.viewport,

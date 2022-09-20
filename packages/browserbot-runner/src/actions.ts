@@ -23,8 +23,7 @@ export const actionWhitelists: { [k: string]: BLEventName[] } = {
     'mousemove',
     'scroll',
     'contextmenu',
-    'resize',
-    'input'
+    'resize'
   ],
   mock: [
     'mousedown',
