@@ -96,7 +96,8 @@ export type BLEventName =
   | 'user-start'
   | 'user-stop'
   | 'storage'
-  | 'device';
+  | 'device'
+  | 'cookie-details';
 
 export interface BLEvent {
   name: BLEventName;
@@ -122,6 +123,9 @@ export interface BLSessionEvent extends BLEvent, BLSessionReference {
 
 export interface BLCookieEvent extends BLEvent {
   cookie: string;
+}
+export interface BLCookieDetailsEvent extends BLEvent {
+  details: { domain: string; path: string; name: string; value: string }[];
 }
 
 export type BLGlobalErrorEvent = BLEvent & {

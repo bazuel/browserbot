@@ -54,8 +54,8 @@ export class Runner {
     log('runner.ts: run: unzip');
     unzip(new Uint8Array(actionsZip), async (err, data) => {
       await this.runSession(data, 'video').catch((e) => log(e));
-      await this.runSession(data, 'screenshot').catch((e) => log(e));
-      await this.runSession(data, 'dom').catch((e) => log(e));
+      //await this.runSession(data, 'screenshot').catch((e) => log(e));
+      //await this.runSession(data, 'dom').catch((e) => log(e));
       log('runner.ts: run: jsonUpload');
       await this.uploadInfoJson();
       log('session ended gracefully');
@@ -92,6 +92,7 @@ export class Runner {
 
   private async setupMock(jsonEvents: BLEvent[]) {
     this.mockService = new MockService(this.context);
+    await this.mockService.setupMockCookie(jsonEvents);
     this.mockService.actualTimestamp = jsonEvents[0].timestamp;
     await this.mockService.exposeFunctions();
     jsonEvents = await this.mockService.mockStorage(jsonEvents);

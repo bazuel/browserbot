@@ -5,7 +5,7 @@ import { isRecording, setRecording } from './recording.state';
 import { uploadEvents } from './upload.api';
 
 const session = { tab: 0 };
-
+let cookieDetailsEvent: any = {};
 let events: BLEvent[] = [];
 
 chrome.runtime.onMessage.addListener(async function (request, sender, sendResponse) {
@@ -32,9 +32,21 @@ chrome.runtime.onMessage.addListener(async function (request, sender, sendRespon
     if (request.messageType == 'session-event') {
       const { messageType, ...r } = request;
       events.push({ ...r, timestamp: Date.now(), url, ...session });
+
+      if (r.name == 'referrer') {
+        cookieDetailsEvent = await getCookiesFromDomain(url);
+        events.push({ ...cookieDetailsEvent, timestamp: Date.now(), url, ...session });
+      }
     }
     sendResponse({});
   }
 });
 
 setRecording(false);
+
+async function getCookiesFromDomain(url) {
+  const domain = new URL(url).hostname;
+  const cookieEvent = { name: 'cookie-details', type: 'cookie', details: {} };
+  cookieEvent.details = await chrome.cookies.getAll({ domain: domain });
+  return cookieEvent;
+}

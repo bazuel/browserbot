@@ -1,6 +1,6 @@
 import { BrowserContext } from 'playwright';
 import { BLEvent } from '@browserbot/monitor';
-import { BLCookieEvent, BLStorageEvent } from '@browserbot/monitor/src/events';
+import { BLCookieDetailsEvent, BLStorageEvent } from '@browserbot/monitor/src/events';
 
 declare global {
   interface Window {
@@ -29,20 +29,13 @@ export class MockService {
   }
 
   async mockStorage(jsonEvents: BLEvent[]) {
-    let cookieAction = jsonEvents.find((ev) => ev.name == 'cookie-data') as BLCookieEvent;
     let localStorageAction = jsonEvents.find((ev) => ev.name == 'local-full') as BLStorageEvent;
     let sessionStorageAction = jsonEvents.find((ev) => ev.name == 'session-full') as BLStorageEvent;
-    if (cookieAction) this.mockData.cookies = cookieAction.cookie;
     if (localStorageAction) this.mockData.localStorage = localStorageAction.storage;
     if (sessionStorageAction) this.mockData.sessionStorage = sessionStorageAction.storage;
 
     await this.context.addInitScript(async (mockData) => {
       if (!(await window.controlMock()).storage) {
-        if (mockData.cookies) {
-          for (const cookie of mockData.cookies.split(';')) {
-            document.cookie = cookie;
-          }
-        }
         for (const key in mockData.localStorage)
           localStorage.setItem(key, mockData.localStorage[key]);
         for (const key in mockData.sessionStorage)
@@ -118,5 +111,15 @@ export class MockService {
 
   set actualTimestamp(value: number) {
     this._actualTimestamp = value;
+  }
+
+  async setupMockCookie(jsonEvents: BLEvent[]) {
+    let cookieAction = jsonEvents.find((ev) => ev.name == 'cookie-details') as BLCookieDetailsEvent;
+    if (cookieAction) {
+      cookieAction.details = cookieAction.details.map((detail) => {
+        return { name: detail.name, value: detail.value, path: detail.path, domain: detail.domain };
+      });
+      await this.context.addCookies(cookieAction.details);
+    }
   }
 }
