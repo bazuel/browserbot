@@ -102,6 +102,9 @@ export class StorageService {
           )
           .on('httpUploadProgress', ({ loaded, total }) => {
             console.log('Progress:', loaded, '/', total, `${Math.round((100 * loaded) / total)}%`);
+          })
+          .on('error', (error) => {
+            console.log(error);
           });
       } catch (e) {
         throw new Error('Cannot upload file');

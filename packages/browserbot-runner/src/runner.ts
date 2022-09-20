@@ -6,8 +6,15 @@ import { BLEvent, BLWindowResizeEvent } from '@browserbot/monitor/src/events';
 import { BBSessionInfo } from '@browserbot/model';
 import { actionWhitelists, executeAction } from './actions';
 import { MockService } from './mock.service';
+import { log } from './log.service';
 
 const storageService = new StorageService(new ConfigService());
+
+declare global {
+  interface Window {
+    blSerializer: any;
+  }
+}
 
 export class Runner {
   browser: Browser;
@@ -29,26 +36,39 @@ export class Runner {
   private VIDEODIR = 'videos/';
   context: BrowserContext;
   private mockService: MockService;
-  sessionType: 'mock' | 'full';
+  backendType: 'mock' | 'full';
+  private sessionType: 'video' | 'screenshot' | 'dom';
 
   constructor() {
     this.serializerScript = fs.readFileSync('./scripts/index.serializer.js', 'utf8');
     this.useragent =
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.88 Safari/537.36';
     this.viewport = { width: 1280, height: 619 };
-    this.addPositionSelector().then((_) => console.log('Context ready'));
+    this.addPositionSelector().then((_) => log('Context ready'));
   }
 
-  async run(path: string, sessionType: 'full' | 'mock') {
-    this.sessionType = sessionType;
+  async run(path: string, backendType: 'full' | 'mock') {
+    this.backendType = backendType;
     this.sessionInfo.sessionPath = path.replace('.zip', '');
     const actionsZip = await storageService.read(path);
+    log('runner.ts: run: unzip');
     unzip(new Uint8Array(actionsZip), async (err, data) => {
-      await this.runSession(data);
+      try {
+        //await this.runSession(data, 'video').catch((e) => log(e));
+        await this.runSession(data, 'screenshot').catch((e) => log(e));
+        //await this.runSession(data, 'dom').catch((e) => log(e));
+        log('runner.ts: run: jsonUpload');
+        await this.uploadInfoJson();
+        log('session ended gracefully');
+      } catch (e) {
+        log(e);
+      }
     });
   }
 
-  private async runSession(data: Unzipped) {
+  private async runSession(data: Unzipped, sessionType: 'video' | 'screenshot' | 'dom') {
+    log('running', sessionType);
+    this.sessionType = sessionType;
     for (let f in data) {
       const raw = strFromU8(data[f]);
       let jsonEvents: BLEvent[] = JSON.parse(raw);
@@ -64,8 +84,9 @@ export class Runner {
 
   private async setup(jsonEvents: BLEvent[]) {
     this.context = await this.setupContext(jsonEvents);
-    if (this.sessionType == 'mock') jsonEvents = await this.setupMock(jsonEvents);
+    if (this.backendType == 'mock') jsonEvents = await this.setupMock(jsonEvents);
     jsonEvents = await this.setupPage(jsonEvents);
+    await this.injectSerializerScript();
     if (this.page.url().includes('www.google.com/search?q='))
       await this.page.locator('button:has-text("Accetta tutto")').click();
     //TODO pezza
@@ -84,13 +105,14 @@ export class Runner {
   }
 
   private async runAction(action: BLEvent) {
+    log(action.name);
     this.takeAction = false;
-    if (this.sessionType == 'mock') this.mockService.actualTimestamp = action.timestamp;
-    if (actionWhitelists[this.sessionType].includes(action.name)) {
+    if (this.backendType == 'mock') this.mockService.actualTimestamp = action.timestamp;
+    if (actionWhitelists[this.backendType].includes(action.name)) {
       await this.wait(action);
       await executeAction[action.name].apply(this, [action]);
-      if (this.takeAction) {
-        //await this.takeShot(action);
+      if (this.takeAction && this.sessionType != 'video') {
+        await this.takeShot(action);
       }
     }
   }
@@ -115,11 +137,17 @@ export class Runner {
       this.useragent = deviceAction.userAgent;
     }
     this.browser = await chromium.launch({ channel: 'chrome', headless: false });
-    return await this.browser.newContext({
-      viewport: this.viewport,
-      userAgent: this.useragent,
-      recordVideo: { dir: this.VIDEODIR, size: this.viewport }
-    });
+    if (this.sessionType == 'video')
+      return await this.browser.newContext({
+        viewport: this.viewport,
+        userAgent: this.useragent,
+        recordVideo: this.sessionType ? { dir: this.VIDEODIR, size: this.viewport } : undefined
+      });
+    else
+      return await this.browser.newContext({
+        viewport: this.viewport,
+        userAgent: this.useragent
+      });
   }
 
   private async setupPage(jsonEvents) {
@@ -136,20 +164,24 @@ export class Runner {
 
   private async takeShot(action: BLEvent) {
     this.filename = `${this.sessionInfo.sessionPath}/${action.name}/${action.timestamp}`;
-    await this.page.screenshot().then((bufferScreenShot) => {
-      storageService.upload(bufferScreenShot, this.filename + '.png');
-    });
-    this.sessionInfo.screenshots.push({
-      filename: this.filename + '.png',
-      dimension: this.page.viewportSize()
-    });
-    //for DOM snapshots
-    await this.takeDom().then((domJson) => {
-      storageService.upload(Buffer.from(JSON.stringify(domJson)), this.filename + '.json');
-    });
-    this.sessionInfo.domShots.push({
-      filename: this.filename + '.json'
-    });
+    if (this.sessionType == 'screenshot') {
+      await this.page.screenshot().then((bufferScreenShot) => {
+        storageService.upload(bufferScreenShot, this.filename + '.png');
+      });
+
+      this.sessionInfo.screenshots.push({
+        filename: this.filename + '.png',
+        dimension: this.page.viewportSize()
+      });
+    } else {
+      //for DOM snapshots. this.sessionType set on 'dom'
+      await this.takeDom().then((domJson) => {
+        storageService.upload(Buffer.from(JSON.stringify(domJson)), this.filename + '.json');
+      });
+      this.sessionInfo.domShots.push({
+        filename: this.filename + '.json'
+      });
+    }
   }
 
   private async takeDom() {
@@ -159,15 +191,17 @@ export class Runner {
   }
 
   private async concludeSession() {
-    await this.uploadInfoJson();
-    let localPathVideo = await this.page.video().path(); //local path inside docker container
+    let localPathVideo = '';
+    if (this.sessionType == 'video') localPathVideo = await this.page.video().path();
+    //local path inside docker container
     await this.context.close();
-    console.log('session ended gracefully');
-    await this.uploadVideo(localPathVideo);
+    if (this.sessionType == 'video') {
+      this.sessionInfo.video = { filename: `${this.sessionInfo.sessionPath}.webm` };
+      await this.uploadVideo(localPathVideo);
+    }
   }
 
   private async uploadInfoJson() {
-    this.sessionInfo.video = { filename: `${this.sessionInfo.sessionPath}.webm` };
     await storageService.upload(
       Buffer.from(JSON.stringify(this.sessionInfo)),
       `${this.sessionInfo.sessionPath}/info.json`
@@ -177,7 +211,7 @@ export class Runner {
   private async uploadVideo(pathVideo: string) {
     const readStream = fs.createReadStream(pathVideo);
     await storageService.upload(readStream, this.sessionInfo.video.filename);
-    console.log('uploading ended');
+    log('uploading ended');
     readStream.destroy();
     fs.unlink(pathVideo, (err) => {
       if (err) throw err;
@@ -215,5 +249,13 @@ export class Runner {
       }
     });
     await selectors.register('position', createPositionEngine);
+  }
+
+  private async injectSerializerScript() {
+    await this.page.evaluate((serializerScript) => {
+      const s = document.createElement('script');
+      s.textContent = serializerScript;
+      document.head.appendChild(s);
+    }, this.serializerScript);
   }
 }
