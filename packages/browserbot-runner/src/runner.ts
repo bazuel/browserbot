@@ -9,16 +9,6 @@ import { MockService } from './mock.service';
 
 const storageService = new StorageService(new ConfigService());
 
-declare global {
-  interface Window {
-    blSerializer: any;
-    controlMock: () => Promise<{ date: boolean; storage: boolean }>;
-    setMockDateTrue: () => void;
-    setMockStorageTrue: () => void;
-    getActualMockedTimestamp: () => Promise<number>;
-  }
-}
-
 export class Runner {
   browser: Browser;
   page: Page;
@@ -136,10 +126,9 @@ export class Runner {
     this.page = await this.context.newPage();
     let setupActionsName = ['referrer'];
     for (const actionName of setupActionsName) {
-      let action = jsonEvents.filter((a) => a.name === actionName)[0];
+      let action = jsonEvents.find((a) => a.name === actionName);
       if (action) {
         await executeAction[action.name].apply(this, [action]);
-        jsonEvents.splice(jsonEvents.indexOf(action), 1);
       }
     }
     return jsonEvents;

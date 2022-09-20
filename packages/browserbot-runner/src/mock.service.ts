@@ -2,57 +2,54 @@ import { BrowserContext } from 'playwright';
 import { BLEvent } from '@browserbot/monitor';
 import { BLCookieEvent, BLStorageEvent } from '@browserbot/monitor/src/events';
 
+declare global {
+  interface Window {
+    blSerializer: any;
+    controlMock: () => Promise<{ date: boolean; storage: boolean }>;
+    setMockDateTrue: () => void;
+    setMockStorageTrue: () => void;
+    getActualMockedTimestamp: () => Promise<number>;
+  }
+}
+
 export class MockService {
   private context: BrowserContext;
   private mockedState: { date: boolean; storage: boolean };
   private _actualTimestamp: number;
+  private mockData: {
+    cookies?: string;
+    localStorage?: { [k: string]: string };
+    sessionStorage?: { [k: string]: string };
+  };
+
   constructor(context: BrowserContext) {
     this.context = context;
     this.mockedState = { date: false, storage: false };
+    this.mockData = {};
   }
 
   async mockStorage(jsonEvents: BLEvent[]) {
-    let data: {
-      cookies?: string;
-      localStorage?: { [k: string]: string };
-      sessionStorage?: { [k: string]: string };
-    } = {};
-    let cookieAction = jsonEvents.filter((ev) => ev.name == 'cookie-data')[0] as BLCookieEvent;
-    if (cookieAction) {
-      jsonEvents.splice(jsonEvents.indexOf(cookieAction), 1);
-      data.cookies = cookieAction.cookie;
-    }
-    let localStorageAction = jsonEvents.filter(
-      (ev) => ev.name == 'local-full'
-    )[0] as BLStorageEvent;
-    if (localStorageAction) {
-      jsonEvents.splice(jsonEvents.indexOf(localStorageAction), 1);
-      data.localStorage = localStorageAction.storage;
-    }
-    let sessionStorageAction = jsonEvents.filter(
-      (ev) => ev.name == 'session-full'
-    )[0] as BLStorageEvent;
-    if (sessionStorageAction) {
-      jsonEvents.splice(jsonEvents.indexOf(sessionStorageAction), 1);
-      data.sessionStorage = sessionStorageAction.storage;
-    }
-    await this.context.addInitScript(async (data) => {
+    let cookieAction = jsonEvents.find((ev) => ev.name == 'cookie-data') as BLCookieEvent;
+    let localStorageAction = jsonEvents.find((ev) => ev.name == 'local-full') as BLStorageEvent;
+    let sessionStorageAction = jsonEvents.find((ev) => ev.name == 'session-full') as BLStorageEvent;
+    if (cookieAction) this.mockData.cookies = cookieAction.cookie;
+    if (localStorageAction) this.mockData.localStorage = localStorageAction.storage;
+    if (sessionStorageAction) this.mockData.sessionStorage = sessionStorageAction.storage;
+
+    await this.context.addInitScript(async (mockData) => {
       if (!(await window.controlMock()).storage) {
-        let mockData = data;
         if (mockData.cookies) {
           for (const cookie of mockData.cookies.split(';')) {
             document.cookie = cookie;
           }
         }
-        for (const key in mockData.localStorage) {
+        for (const key in mockData.localStorage)
           localStorage.setItem(key, mockData.localStorage[key]);
-        }
-        for (const key in mockData.sessionStorage) {
+        for (const key in mockData.sessionStorage)
           sessionStorage.setItem(key, mockData.sessionStorage[key]);
-        }
         await window.setMockStorageTrue();
       }
-    }, data);
+    }, this.mockData);
     return jsonEvents;
   }
 
