@@ -6,6 +6,7 @@ export class CookieMonitor implements BLMonitor {
 
   enable(): void {
     let lastCookies = "";
+    
     this.interval = setInterval(() => {
       if (document.cookie != lastCookies) {
         lastCookies = document.cookie;
