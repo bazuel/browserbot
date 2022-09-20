@@ -53,16 +53,12 @@ export class Runner {
     const actionsZip = await storageService.read(path);
     log('runner.ts: run: unzip');
     unzip(new Uint8Array(actionsZip), async (err, data) => {
-      try {
-        await this.runSession(data, 'video').catch((e) => log(e));
-        await this.runSession(data, 'screenshot').catch((e) => log(e));
-        await this.runSession(data, 'dom').catch((e) => log(e));
-        log('runner.ts: run: jsonUpload');
-        await this.uploadInfoJson();
-        log('session ended gracefully');
-      } catch (e) {
-        log(e);
-      }
+      await this.runSession(data, 'video').catch((e) => log(e));
+      await this.runSession(data, 'screenshot').catch((e) => log(e));
+      await this.runSession(data, 'dom').catch((e) => log(e));
+      log('runner.ts: run: jsonUpload');
+      await this.uploadInfoJson();
+      log('session ended gracefully');
     });
   }
 

@@ -12,6 +12,7 @@ import {
 } from '@browserbot/monitor/src/events';
 import { BBEventWithSerializedTarget } from '@browserbot/model';
 import { locatorFromTarget } from './target-matcher';
+import { log } from './log.service';
 
 export const actionWhitelists: { [k: string]: BLEventName[] } = {
   full: [
@@ -80,33 +81,38 @@ export async function executeResize(a: BLWindowResizeEvent) {
 }
 
 export async function executeInput(a: BBEventWithSerializedTarget<BLInputChangeEvent>) {
-  //TODO: PEZZA: aggiunta pezza del keyup/keydown quando input non trova elemento. (comportamento randomico)
+  //TODO: keyup/keydown quando input non trova elemento.
 
   await locatorFromTarget(a.target, this.page).then(
     async (locator) =>
       await locator
         .type(a.value, { timeout: 1000 })
         .catch(async () => {
-          // catch only if key is unknown (then execute input on that character)
-          if (this.lastAction.name == 'keyup') {
-            await executeAction.keyup.apply(this, [this.lastAction]);
+          if (this.lastAction.name == 'keydown') {
+            for (const word of a.value) {
+              await executeAction.keydown.apply(this, [{ key: word }]);
+              await executeAction.keyup.apply(this, [{ key: word }]);
+            }
           }
-          if (this.nextAction.name == 'keyup') {
-            await executeAction.keyup.apply(this, [this.nextAction]);
+          if (this.nextAction.name == 'keydown') {
+            for (const word of a.value) {
+              await executeAction.keydown.apply(this, [{ key: word }]);
+              await executeAction.keyup.apply(this, [{ key: word }]);
+            }
           }
         })
-        .finally(() => console.log(a))
+        .finally(() => log(a))
   );
   this.takeAction = this.nextAction?.name != 'input';
 }
 
 export async function executeKeyUp(a: BBEventWithSerializedTarget<BLKeyboardEvent>) {
-  await this.page.keyboard.up(a.key).catch((reason) => console.log(reason));
+  await this.page.keyboard.up(a.key).catch((reason) => log(reason));
   this.takeAction = false;
 }
 
 export async function executeKeyDown(a: BBEventWithSerializedTarget<BLKeyboardEvent>) {
-  //TODO: per ora è una pezza. ma funziona
+  //TODO: inserimento manuale della chiocciola
   if (a.key == '@') await this.page.keyboard.insertText('@');
   await this.page.keyboard.down(a.key).catch(async () => {
     // catch only if key is unknown (then execute input on that character)
