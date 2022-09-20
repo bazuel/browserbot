@@ -11,7 +11,8 @@
     "webRequest",
     "tabs",
     "management",
-    "webNavigation"
+    "webNavigation",
+    "cookies"
   ],
   "host_permissions": ["<all_urls>"],
   "background": {
