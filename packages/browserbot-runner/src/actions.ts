@@ -81,39 +81,28 @@ export async function executeResize(a: BLWindowResizeEvent) {
   this.takeAction = true;
 }
 
-export async function executeInput(
-  a: BBEventWithSerializedTarget<BLInputChangeEvent>,
-  forceExecution = false
-) {
+export async function executeInput(a: BBEventWithSerializedTarget<BLInputChangeEvent>) {
   //TODO: keyup/keydown quando input non trova elemento.
-  if (forceExecution)
-    await locatorFromTarget(a.target, this.page).then(
-      async (locator) =>
-        await locator
-          .type(a.value, { timeout: 1000 })
-          .then(() => log('switch from key to input:', a.value))
-    );
-  else if (!this.lastAction.name.includes('key') && !this.nextAction.name.includes('key')) {
-    await locatorFromTarget(a.target, this.page).then(
-      async (locator) =>
-        await locator
-          .fill(a.value, { timeout: 1000 })
-          .catch(async () => {
-            if (this.lastAction.name == 'keydown' || this.nextAction.name == 'keydown') {
-              for (const word of a.value) {
-                await executeAction.keydown.apply(this, [{ key: word }]);
-                await executeAction.keyup.apply(this, [{ key: word }]);
-              }
-            }
-          })
-          .finally(() => log('swith from input to key:', a.value))
-    );
+  if (!this.lastAction.name.includes('key') && !this.nextAction.name.includes('key')) {
+    await locatorFromTarget(a.target, this.page).then(async (locator) => {
+      let missingTextLength = a.value.length - (await locator.inputValue()).length;
+      if (missingTextLength >= 2) {
+        log('filling text due to autocomplete');
+        await locator.fill(a.value, { timeout: 1000 }).catch(async () => {
+          for (const word of a.value.slice(-missingTextLength)) {
+            await executeAction.keydown.apply(this, [{ key: word }]);
+            await executeAction.keyup.apply(this, [{ key: word }]);
+          }
+          log('switch from input to key:', a.value);
+        });
+      }
+    });
   }
   this.takeAction = this.nextAction?.name != 'input';
 }
 
 export async function executeKeyUp(a: BBEventWithSerializedTarget<BLKeyboardEvent>) {
-  await this.page.keyboard.up(a.key).catch((reason) => log(reason));
+  await this.page.keyboard.up(a.key).catch(() => log('Unknown key:', a.key));
   this.takeAction = false;
 }
 
@@ -121,15 +110,7 @@ export async function executeKeyDown(a: BBEventWithSerializedTarget<BLKeyboardEv
   //TODO: inserimento manuale della chiocciola
   if (a.key == '@') await this.page.keyboard.insertText('@');
   await this.page.keyboard.down(a.key).catch(async () => {
-    // catch only if key is unknown (then execute input on that character)
-    if (this.lastAction.name == 'input') {
-      this.lastAction.value = this.lastAction.value.slice(-1);
-      await executeAction.input.apply(this, [this.lastAction, true]);
-    }
-    if (this.nextAction.name == 'input') {
-      this.nextAction.value = this.nextAction.value.slice(-1);
-      await executeAction.input.apply(this, [this.nextAction, true]);
-    }
+    await this.page.keyboard.insertText(a.key);
   });
   this.takeAction = false;
 }
@@ -148,12 +129,12 @@ export async function executeRightClick(a: BBEventWithSerializedTarget<BLMouseEv
   this.takeAction = true;
 }
 
-export async function executeMouseDown(a) {
+export async function executeMouseDown() {
   await this.page.mouse.down();
   this.takeAction = false;
 }
 
-export async function executeMouseUp(a) {
+export async function executeMouseUp() {
   await this.page.mouse.up();
   this.takeAction = true;
 }
