@@ -82,7 +82,6 @@ export async function executeResize(a: BLWindowResizeEvent) {
 }
 
 export async function executeInput(a: BBEventWithSerializedTarget<BLInputChangeEvent>) {
-  //TODO: keyup/keydown quando input non trova elemento.
   if (!this.lastAction.name.includes('key') && !this.nextAction.name.includes('key')) {
     await locatorFromTarget(a.target, this.page).then(async (locator) => {
       let missingTextLength = a.value.length - (await locator.inputValue()).length;
@@ -97,8 +96,8 @@ export async function executeInput(a: BBEventWithSerializedTarget<BLInputChangeE
         });
       }
     });
+    this.takeAction = true;
   }
-  this.takeAction = this.nextAction?.name != 'input';
 }
 
 export async function executeKeyUp(a: BBEventWithSerializedTarget<BLKeyboardEvent>) {
