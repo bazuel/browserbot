@@ -14,3 +14,7 @@ export { BLEvent, BLEventWithTarget } from './events';
 export { ElementSelectorFinder } from './selector-finder.util';
 export { HttpMonitor } from './http.monitor';
 export { getElementRect, getElementAttributes } from './serialize-target';
+export { DomMonitor } from './dom/dom.monitor';
+export { CssMonitor } from './dom/css.monitor';
+export { MediaMonitor } from './dom/media.monitor';
+export { ForceWebComponentsSerializationPatch } from './dom/force-web-components-serialization.patch';

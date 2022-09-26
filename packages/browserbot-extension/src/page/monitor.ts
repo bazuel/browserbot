@@ -13,7 +13,11 @@ import {
   getElementRect,
   getElementAttributes,
   BLEventWithTarget,
-  ElementSelectorFinder
+  ElementSelectorFinder,
+  DomMonitor,
+  ForceWebComponentsSerializationPatch,
+  CssMonitor,
+  MediaMonitor
 } from '@browserbot/monitor';
 
 function sendToExtension(event) {
@@ -56,6 +60,7 @@ async function sendEventWithSerializedTargetToExtension(event) {
   });
 }
 
+new ForceWebComponentsSerializationPatch().apply();
 const monitors = [
   new MouseMonitor(),
   new CookieMonitor(),
@@ -65,13 +70,24 @@ const monitors = [
   new PageMonitor(),
   new ScrollMonitor(),
   new StorageMonitor(),
-  new WindowResizeMonitor()
+  new WindowResizeMonitor(),
+  new DomMonitor(),
+  new CssMonitor(),
+  new MediaMonitor()
 ];
 
 Object.keys(blevent.mouse).forEach((me) => {
   if (me != 'scroll') blevent.mouse[me].on(sendEventWithSerializedTargetToExtension);
   else blevent.mouse[me].on(sendEventWithTargetToExtension);
 });
+
+blevent.media.play.on(sendEventWithSerializedTargetToExtension)
+blevent.media.pause.on(sendEventWithSerializedTargetToExtension)
+
+blevent.dom.change.on(sendToExtension);
+blevent.dom.full.on(sendToExtension);
+blevent.dom.css_add.on(sendEventWithSerializedTargetToExtension);
+blevent.dom.css_remove.on(sendEventWithSerializedTargetToExtension);
 
 blevent.cookie.data.on(sendToExtension);
 
