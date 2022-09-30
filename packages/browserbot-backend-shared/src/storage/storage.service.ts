@@ -1,7 +1,8 @@
 import { S3 } from 'aws-sdk';
 import { Readable } from 'stream';
 import { getS3Stream } from './s3-stream';
-import {ConfigService} from "../config/config.service";
+import { ConfigService } from '../config/config.service';
+import { ReadStream } from 'fs';
 
 const AWS = require('aws-sdk');
 
@@ -28,7 +29,7 @@ export class StorageService {
       endpoint: config.storage.endpoint,
       accessKeyId: config.storage.accessKey,
       secretAccessKey: config.storage.secretKey,
-      s3BucketEndpoint: true,
+      s3BucketEndpoint: true
     });
   }
 
@@ -37,7 +38,7 @@ export class StorageService {
       this.s3.listObjects(
         {
           Bucket: this.bucket,
-          Prefix: prefix,
+          Prefix: prefix
         },
         function (err, data) {
           if (err) {
@@ -46,7 +47,7 @@ export class StorageService {
             // Return the list ("Contents") as JSON
             s(data.Contents as unknown as S3Object[]);
           }
-        },
+        }
       );
     });
     return result;
@@ -80,7 +81,7 @@ export class StorageService {
     return getS3Stream(this.bucket, path, this.s3);
   }
 
-  async upload(buffer: Buffer, filename: string) {
+  async upload(buffer: Buffer | ReadStream, filename: string) {
     const data = buffer;
     const result = new Promise((s, e) => {
       try {
@@ -89,7 +90,7 @@ export class StorageService {
             {
               Body: data,
               Bucket: this.bucket,
-              Key: filename,
+              Key: filename
             },
             function (err, data) {
               if (err) {
@@ -97,16 +98,13 @@ export class StorageService {
               } else {
                 s(data);
               }
-            },
+            }
           )
           .on('httpUploadProgress', ({ loaded, total }) => {
-            console.log(
-              'Progress:',
-              loaded,
-              '/',
-              total,
-              `${Math.round((100 * loaded) / total)}%`,
-            );
+            console.log('Progress:', loaded, '/', total, `${Math.round((100 * loaded) / total)}%`);
+          })
+          .on('error', (error) => {
+            console.log(error);
           });
       } catch (e) {
         throw new Error('Cannot upload file');

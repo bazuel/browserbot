@@ -1,12 +1,4 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Query,
-  Req,
-  Res,
-  StreamableFile,
-} from '@nestjs/common';
+import { Controller, Get, Post, Query, Req, Res, StreamableFile } from '@nestjs/common';
 import { SessionService } from './session.service';
 
 @Controller('session')
@@ -14,21 +6,15 @@ export class SessionController {
   constructor(private sessionService: SessionService) {}
 
   @Get('download')
-  async download(
-    @Res({ passthrough: true }) res,
-    @Query('path') path,
-  ) {
+  async download(@Res({ passthrough: true }) res, @Query('path') path) {
     const stream = await this.sessionService.sessionStream(path);
     const filename = path.split('/').pop();
-    (res as any).header(
-      'Content-Disposition',
-      `attachment; filename="${filename}"`,
-    );
+    (res as any).header('Content-Disposition', `attachment; filename="${filename}"`);
     return new StreamableFile(stream);
   }
 
   @Post('upload')
-  async uploadFile(@Req() req, @Res() res) {
+  async uploadFile(@Req() req, @Res() res): Promise<any> {
     if (!req.isMultipart()) throw new Error('Not a multipart request');
 
     const data: {
@@ -47,12 +33,50 @@ export class SessionController {
         };
       };
     } = await req.file();
-
-    const { path } = await this.sessionService.saveSession(
+    const { path, id } = await this.sessionService.saveSession(
       data.file,
-      data.fields['url']?.value,
+      data.fields['url']?.value
     );
     console.log('path: ', path);
-    res.send({ ok: true, path });
+    res.send({ ok: true, path, id });
+  }
+
+  @Get('screenshot')
+  async getScreenshot(@Res({ passthrough: true }) res, @Query('path') path) {
+    return await this.getStreamByPath(path + '.png', res);
+  }
+
+  @Get('video')
+  async getVideo(@Res({ passthrough: true }) res: Response, @Query('path') path) {
+    return await this.getStreamByPath(path + '.webm', res);
+  }
+
+  @Get('dom')
+  async getDom(@Res({ passthrough: true }) res, @Query('path') path) {
+    return await this.getStreamByPath(path + '.json', res);
+  }
+
+  @Get('info-by-path')
+  async getInfoByPath(@Res({ passthrough: true }) res, @Query('path') path) {
+    return await this.getStreamByPath(path + '/info.json', res);
+  }
+
+  @Get('info-by-id')
+  async getInfoById(@Res({ passthrough: true }) res, @Query('id') id) {
+    const session = await this.sessionService.findById(id);
+    const path = session.path.replace('.zip', '/info.json');
+    return await this.getStreamByPath(path, res);
+  }
+
+  private async getStreamByPath(path, res) {
+    const stream = await this.sessionService.sessionStream(path);
+    const filename = path.split('/').pop();
+    (res as any).header('Content-Disposition', `attachment; filename="${filename}";`);
+    return new StreamableFile(stream);
+  }
+
+  @Get('all')
+  async getAll(@Res({ passthrough: true }) res, @Query('id') id) {
+    return await this.sessionService.getAll();
   }
 }

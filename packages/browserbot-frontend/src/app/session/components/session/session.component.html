@@ -1,0 +1,70 @@
+<div class="flex h-screen" *ngIf="ready">
+  <div class="w-1/5 h-full bg-bb-400 overflow-y-scroll scrollbar-sm p-2.5">
+    <label>Lista azioni della sessione</label>
+    <div class="m-1 hover:bg-bb-200 cursor-pointer text-white bg-bb-300 rounded-md px-2"
+         *ngFor="let action of sessionInfo.screenshots"
+         title="clicca per i dettagli" (click)="showDetails(action)">
+      <div>Tipo: {{action.filename | formatAction: 'name'}}</div>
+      <div class="text-xs">Timestamp: {{(action.filename | formatAction: 'timestamp') | formatTime:'HH:mm:ss'}}</div>
+    </div>
+  </div>
+
+  <div class="relative flex-1 h-full bg-bb-50 p-2.5 overflow-y-scroll">
+    <div class="flex flex-row justify-between m-5">
+      <div class="flex flex-row items-center">
+        <img src="/assets/robot.png" width="87px" height="88px" alt="Robby!">
+        <button class="bo-button mx-2" (click)="showVideo=true" title="play video session">
+          <bb-icon name="play"></bb-icon>
+          PLAY
+        </button>
+        <button class="bo-button mx-2" (click)="runSession()" title="rerun session">
+          <bb-icon name="rerun"></bb-icon>
+          RE-RUN
+          <input class="ml-2" type="checkbox" title="frontend isolato" (click)="sessionMocked = !sessionMocked; $event.stopPropagation()">
+        </button>
+        <button class="bo-button mx-2" title="save as e2e test">
+          <bb-icon name="test"></bb-icon>
+          TEST
+        </button>
+        <button class="bo-button mx-2" title="share video">
+          <bb-icon name="video"></bb-icon>
+          SHARE VIDEO
+        </button>
+      </div>
+      <div class="flex flex-row">
+        <div class="flex flex-col">
+          <div class="flex flex-row items-center">
+            <div class="mr-6 font-normal text-bb-gray">MORE USE CASES</div>
+            <div class="text-sm font-normal text-bb-gray">Check the <a href="https://github.com/bazuel/browserbot">BrowserBot
+              API</a></div>
+          </div>
+          <div class="flex justify-between">
+            <button class="bo-button">
+              <bb-icon name="crawl"></bb-icon>
+              CRAWL
+            </button>
+            <button class="bo-button">
+              <bb-icon name="funnel"></bb-icon>
+              FUNNEL
+            </button>
+            <button class="bo-button">
+              <bb-icon name="users"></bb-icon>
+              USERS
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div *ngIf="detailsAction.name">
+      <label>Dettagli azione</label>
+      <label>Istantanea</label>
+      <img class="m-4" src="http://localhost:3005/api/session/screenshot?path={{detailsAction.name}}" *ngIf="imgLoaded"
+           alt="{{detailsAction.name}}" width="50%">
+    </div>
+  </div>
+  <bb-popup *ngIf="showVideo" (close)="showVideo= false">
+    <video width="100%" controls>
+      <source src="http://localhost:3005/api/session/video?path={{sessionInfo.sessionPath}}" type="video/webm">
+    </video>
+  </bb-popup>
+</div>

@@ -1,1 +1,58 @@
 /* You can add global styles to this file, and also import other style files */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import 'node_modules/@butopen/design-system/src/index';
+
+:root {
+  --bo-theme-color: #4E4595;
+}
+
+body {
+  @extend .use-bo-design-system;
+  font-family: 'Open Sans', sans-serif;
+}
+
+label {
+  font-family: 'Roboto Condensed', sans-serif;
+  @apply mt-8;
+}
+
+.scrollbar-sm {
+  &::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: #dedede;
+    border-radius: 4px;
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    background: #a6a6a6;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: #ffffff;
+    border-radius: 7px;
+    box-shadow: inset 7px 10px 12px #f0f0f0;
+  }
+}
+
+.bo-button {
+  @apply bg-gradient-to-br from-bb-red-light to-bb-red drop-shadow-md shadow-bb-400 font-extrabold text-xs p-1.5;
+
+  &[disabled] {
+    @apply opacity-30;
+  }
+
+  &.outline {
+    @apply border-0 border-white bg-white p-1 text-xs outline-0;
+  }
+
+  &.sm {
+    @apply px-1;
+  }
+}

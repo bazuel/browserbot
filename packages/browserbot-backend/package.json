@@ -22,6 +22,7 @@
   },
   "dependencies": {
     "@fastify/multipart": "^6.0.0",
+    "@browserbot/backend-shared": "link:../browserbot-backend-shared",
     "@browserbot/model": "file:../browserbot-model",
     "@nestjs/common": "^8.0.0",
     "@nestjs/core": "^8.0.0",

@@ -10,16 +10,15 @@ export interface BBUser {
   phone?: string;
 }
 
-export type BBUserState = "ACTIVE" | "DELETED";
+export type BBUserState = 'ACTIVE' | 'DELETED';
 
-export type BBRole = "ADMIN" | "USER";
+export type BBRole = 'ADMIN' | 'USER';
 export const BBRoleLabels: { [role in BBRole]: string } = {
-  ADMIN: "Amministratore",
-  USER: "Utente",
+  ADMIN: 'Amministratore',
+  USER: 'Utente'
 };
 export const BBRoleLabelsArray: { role: BBRole; label: string }[] = [];
-for (const r in BBRoleLabels)
-  BBRoleLabelsArray.push({role: r as BBRole, label: BBRoleLabels[r]});
+for (const r in BBRoleLabels) BBRoleLabelsArray.push({ role: r as BBRole, label: BBRoleLabels[r] });
 
 export interface BBTeam {
   teamid?: string;
@@ -44,4 +43,34 @@ export interface BBSession {
   owner?: BBUser;
 }
 
-export type BBEventWithTarget<T> = T & { targetSelector?: string, key?: string, value?: string }
+export type BBEventWithSerializedTarget<T> = T & {
+  target: BBSerializedTarget;
+  value?: string;
+};
+
+export type BBSerializedTarget = {
+  rect: { x: number; y: number; width: number; height: number };
+  attributes: { [p: string]: string | null };
+  tag: string;
+  innerText: string;
+};
+
+export type BBSessionInfo = {
+  sessionPath: string;
+  screenshots: BBScreenShot[];
+  domShots: BBDomShot[];
+  video: BBVideo;
+};
+
+export type BBScreenShot = {
+  filename: string;
+  dimension: { width: number; height: number };
+};
+
+export type BBVideo = {
+  filename: string;
+};
+
+export type BBDomShot = {
+  filename: string;
+};

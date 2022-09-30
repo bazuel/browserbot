@@ -9,15 +9,13 @@ export class ElementSelectorFinder {
    * @param element
    */
   findUniqueSelector(element: Element): string {
-    if (!element) throw new Error("Element input is mandatory");
-    if (!element.ownerDocument)
-      throw new Error("Element should be part of a document");
+    if (!element) throw new Error('Element input is mandatory');
+    if (!element.ownerDocument) throw new Error('Element should be part of a document');
     let selector = flatSelector(element) + nthChild(element);
     let foundElements = element.ownerDocument.querySelectorAll(selector);
     while (foundElements.length > 1 && element.parentElement) {
-      element = element.parentElement
-      let parentSelector =
-        flatSelector( element) + nthChild(element);
+      element = element.parentElement;
+      let parentSelector = flatSelector(element) + nthChild(element);
       selector = `${parentSelector} > ${selector}`;
       foundElements = element.ownerDocument.querySelectorAll(selector);
     }
@@ -26,7 +24,7 @@ export class ElementSelectorFinder {
 }
 
 function nthChild(element: Element) {
-  let nthSelector = "";
+  let nthSelector = '';
   const parent = element.parentNode;
   if (parent) {
     let elementSelector = flatSelector(element);
@@ -44,18 +42,16 @@ function nthChild(element: Element) {
 
 function attributes(
   element: Element,
-  attributesWhiteList = ["name", " value", "title", "for", "type"]
+  attributesWhiteList = ['name', ' value', 'title', 'for', 'type']
 ) {
   const attributesSelector: string[] = [];
   const { attributes } = element;
   for (let a of Array.from(attributes)) {
     if (attributesWhiteList.indexOf(a.nodeName.toLowerCase()) > -1) {
-      attributesSelector.push(
-        `[${a.nodeName.toLowerCase()}${a.value ? `="${a.value}"` : ""}]`
-      );
+      attributesSelector.push(`[${a.nodeName.toLowerCase()}${a.value ? `="${a.value}"` : ''}]`);
     }
   }
-  return attributesSelector.join("");
+  return attributesSelector.join('');
 }
 
 /**
@@ -68,35 +64,35 @@ function flatSelector(element: Element) {
 
 function classes(element: Element) {
   let classSelectorList: string[] = [];
-  if (element.hasAttribute("class")) {
+  if (element.hasAttribute('class')) {
     try {
       const classList = Array.from(element.classList);
       // return only the valid CSS selectors based on RegEx
       classSelectorList = classList.filter((item) =>
         !/^[a-z_-][a-z\d_-]*$/i.test(item) ? null : item
-      ).filter(item => !item.includes('ng'))
+      );
     } catch (e) {
-      let className = element.getAttribute("class") ?? "";
+      let className = element.getAttribute('class') ?? '';
       // remove duplicate and leading/trailing whitespaces
-      className = className.trim().replace(/\s+/g, " ");
+      className = className.trim().replace(/\s+/g, ' ');
       // split into separate classnames
-      classSelectorList = className.split(" ");
+      classSelectorList = className.split(' ');
     }
   }
-  return classSelectorList.map((c) => "." + c).join("");
+  return classSelectorList.map((c) => '.' + c).join('');
 }
 
 function id(element: Element) {
-  const id = element.getAttribute("id");
-  if (id !== null && id !== "") {
+  const id = element.getAttribute('id');
+  if (id !== null && id !== '') {
     // if the ID starts with a number or contains ":" selecting with a hash will cause a DOMException
-    return id.match(/(?:^\d|:)/) ? `[id="${id}"]` : "#" + id;
+    return id.match(/(?:^\d|:)/) ? `[id="${id}"]` : '#' + id;
   }
-  return "";
+  return '';
 }
 
 function tag(element: Element) {
-  return element.tagName.toLowerCase().replace(/:/g, "\\:");
+  return element.tagName.toLowerCase().replace(/:/g, '\\:');
 }
 
 function getParents(el: Node) {

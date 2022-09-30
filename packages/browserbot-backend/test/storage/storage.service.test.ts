@@ -29,3 +29,19 @@ test('test file upload', async () => {
   const newFilesAfterDelete = newListResultAfterDelete.map((f) => f.Key);
   expect(files.length).toBe(newFilesAfterDelete.length);
 });
+
+test('stream upload', async () => {
+  const content = 'prova di stream';
+  const Readable = require('stream').Readable;
+  const s = new Readable();
+  s.push(content);
+  s.push(null);
+  const ss = new StorageService(new ConfigService());
+  const fileName = 'test/' + Date.now() + 'testuploadstream.txt';
+  await ss.upload(s, fileName);
+
+  const savedContent = await ss.read(fileName);
+  expect(savedContent.toString('utf-8')).toBe(content);
+  const delResult = await ss.delete(fileName);
+  console.log('delResult: ', delResult);
+});

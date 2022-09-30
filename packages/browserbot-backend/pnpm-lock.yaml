@@ -2,6 +2,7 @@ lockfileVersion: 5.4
 
 specifiers:
   '@aws-sdk/client-ses': ^3.100.0
+  '@browserbot/backend-shared': link:../browserbot-backend-shared
   '@browserbot/model': file:../browserbot-model
   '@fastify/multipart': ^6.0.0
   '@nestjs/cli': ^8.0.0
@@ -41,6 +42,7 @@ specifiers:
 
 dependencies:
   '@aws-sdk/client-ses': 3.127.0
+  '@browserbot/backend-shared': link:../browserbot-backend-shared
   '@browserbot/model': file:../browserbot-model
   '@fastify/multipart': 6.0.0
   '@nestjs/common': 8.4.7_47vcjb2de6lyibr6g4enoa5lyu
@@ -100,7 +102,7 @@ packages:
         optional: true
     dependencies:
       ajv: 8.9.0
-      ajv-formats: 2.1.1
+      ajv-formats: 2.1.1_ajv@8.9.0
       chokidar: 3.5.3
       fast-json-stable-stringify: 2.1.0
       magic-string: 0.25.7
@@ -2116,8 +2118,10 @@ packages:
     hasBin: true
     dev: true
 
-  /ajv-formats/2.1.1:
+  /ajv-formats/2.1.1_ajv@8.9.0:
     resolution: {integrity: sha512-Wx0Kx52hxE7C18hkMEggYlEifqWZtYaRgouJor+WMdPnQyEK13vgEWyVNup7SoeeoLMsr4kf5h6dOW11I15MUA==}
+    peerDependencies:
+      ajv: ^8.0.0
     peerDependenciesMeta:
       ajv:
         optional: true
