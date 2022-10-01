@@ -1,9 +1,12 @@
 import { Controller, Get, Post, Query, Req, Res, StreamableFile } from '@nestjs/common';
 import { SessionService } from './session.service';
+import { BLSessionEvent } from '@browserbot/model';
+import {eventId, unzipJson} from 'browserbot-common';
+import { HitService } from './hit.service';
 
 @Controller('session')
 export class SessionController {
-  constructor(private sessionService: SessionService) {}
+  constructor(private sessionService: SessionService, private hitService: HitService) {}
 
   @Get('download')
   async download(@Res({ passthrough: true }) res, @Query('path') path) {
@@ -33,12 +36,20 @@ export class SessionController {
         };
       };
     } = await req.file();
+    const zipFile = data.file;
+    const url = data.fields['url']?.value;
+    const events: BLSessionEvent[] = await unzipJson(zipFile);
+    const reference = events[0]!
+    this.hitService.save(events, reference);
+    /*
+    
     const { path, id } = await this.sessionService.saveSession(
-      data.file,
-      data.fields['url']?.value
+      zipFile,
+      url
     );
     console.log('path: ', path);
-    res.send({ ok: true, path, id });
+     */
+    res.send({ ok: true, id: eventId(reference) });
   }
 
   @Get('screenshot')

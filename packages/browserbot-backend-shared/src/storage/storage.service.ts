@@ -81,7 +81,7 @@ export class StorageService {
     return getS3Stream(this.bucket, path, this.s3);
   }
 
-  async upload(buffer: Buffer | ReadStream, filename: string) {
+  async upload(buffer: Buffer | ReadStream | ArrayBuffer, filename: string) {
     const data = buffer;
     const result = new Promise((s, e) => {
       try {

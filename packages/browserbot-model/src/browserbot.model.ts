@@ -74,3 +74,4 @@ export type BBVideo = {
 export type BBDomShot = {
   filename: string;
 };
+

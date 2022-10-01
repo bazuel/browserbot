@@ -10,12 +10,12 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { UserService } from './user.service';
-import { ConfigService } from '../shared/config.service';
 import { CryptService } from '../shared/crypt.service';
 import { EmailService } from '../shared/email.service';
 import { TokenService } from '../shared/token.service';
 import {Admin, HasToken} from '../shared/token.decorator';
 import { BBUser } from '@browserbot/model';
+import { ConfigService } from '@browserbot/backend-shared';
 import {MessagesService} from "./messages.service";
 
 @Controller('user')
@@ -28,7 +28,9 @@ export class UserController {
     private readonly configService: ConfigService,
     private readonly messagesService: MessagesService
     
-  ) {}
+  ) {
+    console.log(configService)
+  }
 
   @Post('login')
   async login(@Body() user: BBUser) {

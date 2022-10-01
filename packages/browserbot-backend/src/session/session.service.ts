@@ -1,11 +1,9 @@
-import { Injectable } from '@nestjs/common';
-import { ConfigService, StorageService } from '@browserbot/backend-shared';
-import { TimeService } from '../time/time.service';
-import { PostgresDbService, sql } from '../shared/postgres-db.service';
-import { CrudService } from '../shared/crud.service';
-import { BBSession } from '@browserbot/model';
-
-const storageService = new StorageService(new ConfigService());
+import {Injectable} from '@nestjs/common';
+import {StorageService} from '@browserbot/backend-shared';
+import {TimeService} from '../time/time.service';
+import {PostgresDbService, sql} from '../shared/postgres-db.service';
+import {CrudService} from '../shared/crud.service';
+import {BBSession} from '@browserbot/model';
 
 @Injectable()
 export class SessionService {
@@ -13,7 +11,7 @@ export class SessionService {
   private table = 'bb_session';
   private id = 'bb_sessionid';
 
-  constructor(private timeService: TimeService, private db: PostgresDbService) {
+  constructor(private timeService: TimeService, private db: PostgresDbService, private storageService:StorageService) {
     this.sessionTable = new CrudService<BBSession>(db, this.table, this.id);
   }
 
@@ -39,7 +37,7 @@ export class SessionService {
   async saveSession(session: Buffer, url: string) {
     const path = this.path(url);
     const id = (await this.sessionTable.create({ url, path }))[0].bb_sessionid;
-    storageService.upload(session, path).then(() =>
+    this.storageService.upload(session, path).then(() =>
       fetch(
         'http://localhost:3000/api/events?' +
           new URLSearchParams({
@@ -60,7 +58,7 @@ export class SessionService {
   }
 
   async sessionStream(path: string) {
-    return await storageService.getStream(path);
+    return await this.storageService.getStream(path);
   }
 
   async findById(id: string) {

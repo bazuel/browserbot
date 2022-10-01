@@ -7,12 +7,15 @@ import { uploadEvents } from './upload.api';
 let cookieDetailsEvent: any = {};
 let events: BLEvent[] = [];
 
-let sid = await chrome.storage.local.get('sid');
-if (!sid) {
-  await chrome.storage.local.set({ sid: new Date().getTime() });
-}
+(async ()=>{
+  let sid = await chrome.storage.local.get('sid');
+  if (!sid["sid"]) {
+    await chrome.storage.local.set({ sid: new Date().getTime() });
+  }
+})();
 
 chrome.runtime.onMessage.addListener(async function (request, sender, sendResponse) {
+  const sid = (await chrome.storage.local.get('sid'))["sid"]
   if (request.messageType == 'popup-open') {
     disableRecordingIcon();
     const recording = await isRecording();

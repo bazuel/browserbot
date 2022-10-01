@@ -1,7 +1,6 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { ConfigService, globalConfig } from './shared/config.service';
 import { SessionService } from './session/session.service';
 import { TimeService } from './time/time.service';
 import { SessionController } from './session/session.controller';
@@ -12,12 +11,19 @@ import { CryptService } from './shared/crypt.service';
 import { UserController } from './user/user.controller';
 import { EmailService } from './shared/email.service';
 import { TokenService } from './shared/token.service';
+import { StorageService, ConfigService, initGlobalConfig } from '@browserbot/backend-shared';
+import {HitService} from "./session/hit.service";
+const globalConfig = initGlobalConfig()
+
+const configService = new ConfigService(globalConfig)
 
 @Module({
   imports: [],
   controllers: [AppController, UserController, SessionController],
   providers: [
     AppService,
+    { provide: ConfigService, useValue: configService },
+    { provide: StorageService, useValue: new StorageService(configService) },
     { provide: EmailService, useValue: new EmailService(globalConfig.email) },
     {
       provide: CryptService,
@@ -28,11 +34,11 @@ import { TokenService } from './shared/token.service';
       useValue: new TokenService(globalConfig.master_password)
     },
     PostgresDbService,
-    ConfigService,
     MessagesService,
     UserService,
     SessionService,
-    TimeService
+    TimeService,
+    HitService
   ]
 })
 export class AppModule {}

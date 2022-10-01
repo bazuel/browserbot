@@ -25,7 +25,7 @@ export interface Config {
   backend_url: string;
 }
 
-function initGlobalConfig() {
+export function initGlobalConfig() {
   const {
     DB_HOST,
     DB_USERNAME,
@@ -77,7 +77,7 @@ function initGlobalConfig() {
   };
 }
 
-export const globalConfig = initGlobalConfig();
+type GlobalConfig = ReturnType<typeof  initGlobalConfig> 
 
 export class ConfigService implements Config {
   db: any;
@@ -93,9 +93,7 @@ export class ConfigService implements Config {
   app_url: string;
   color: string;
 
-  constructor() {
-    const gc = initGlobalConfig();
-    for (let k in gc) globalConfig[k] = gc[k];
+  constructor(globalConfig:GlobalConfig) {
     this.db = globalConfig.db as any;
     this.master_password = globalConfig.master_password;
     this.backend_url = globalConfig.backend_url;
