@@ -67,8 +67,7 @@ export class HitService {
     return Buffer.byteLength(JSON.stringify(json)) / 1024;
   }
 
-  async save(hits: BLSessionEvent[], sessionStartEvent: BLSessionEvent) {
-    const reference = eventId(sessionStartEvent);
+  async save(hits: BLSessionEvent[], reference:string) {
     const hitsToSave: BLSessionEvent[] = [];
     hits.forEach((h) => {
       const { url, sid, tab, timestamp, type, name, ...data } = h;
@@ -78,14 +77,5 @@ export class HitService {
       } else hitsToSave.push({ url, sid, tab, timestamp, type, name, data, reference });
     });
     await this.hits.bulkCreate(hitsToSave);
-    const sessionToStorage = { reference, events: hits };
-    const compressed = new JsonCompressor().compress(sessionToStorage);
-    const path = `${domainFromUrl(sessionStartEvent.url)}/${reference}.cjson`;
-    try{
-      await this.storageService.upload(compressed, path);
-    }catch (e){
-      console.log(e)
-    }
-    return {path}
   }
 }
