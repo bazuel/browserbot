@@ -1,12 +1,12 @@
-import {createServer} from "http";
-import {serveUsingProxy} from "./proxy.api";
+import { createServer } from "http";
+import { serveUsingProxy } from "./proxy.api";
 import fastify from "fastify";
 
 const serverFactory = (handler, opts) => {
   const httpServer = createServer((req, res) => {
     let url = req.url ?? "";
     if (url.startsWith("/proxy")) {
-      serveUsingProxy(req, res, "/proxy?url=", "*");
+      serveUsingProxy(req, res, "http://localhost:2550/proxy/?url=", "*");
     }
   });
 

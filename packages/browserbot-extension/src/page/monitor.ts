@@ -70,11 +70,12 @@ const monitors = [
   new PageMonitor(),
   new ScrollMonitor(),
   new StorageMonitor(),
-  new WindowResizeMonitor(),
-  new DomMonitor(),
-  new CssMonitor(),
-  new MediaMonitor()
+  new WindowResizeMonitor()
 ];
+
+const delayedMonitors = [new DomMonitor(),
+  new CssMonitor(),
+  new MediaMonitor()]
 
 Object.keys(blevent.mouse).forEach((me) => {
   if (me != 'scroll') blevent.mouse[me].on(sendEventWithSerializedTargetToExtension);
@@ -146,6 +147,9 @@ const httpMonitor = new HttpMonitor();
 function enable() {
   httpMonitor.enable();
   monitors.forEach((m) => m.enable());
+  setTimeout(()=>{
+    delayedMonitors.forEach((m) => m.enable());
+  }, 1000)
 }
 
 enable();
@@ -153,6 +157,7 @@ enable();
 function disable() {
   httpMonitor.disable();
   monitors.forEach((m) => m.disable());
+  delayedMonitors.forEach((m) => m.disable());
 }
 
 /*

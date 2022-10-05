@@ -16,7 +16,7 @@ declare const module: any;
 async function bootstrap() {
   const adapter = new FastifyAdapter({ logger: true })
   adapter.register(multipart)
-  const app = await NestFactory.create(AppModule, adapter,);
+  const app = await NestFactory.create(AppModule, adapter);
 
 
   function logger(req, res, next) {

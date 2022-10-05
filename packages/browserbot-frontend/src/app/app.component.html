@@ -3,3 +3,5 @@
 </div>
 
 <div class="bo-loading-full-screen" *ngIf="loadingService.isLoading()"></div>
+
+<bb-browserbot-player #player *ngIf="session" [session]="session"></bb-browserbot-player>

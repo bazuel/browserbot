@@ -4,7 +4,7 @@ export class CssAbsoluteUrlTransformer {
     RELATIVE_PATH = /^(?!www\.|(?:http|ftp)s?:\/\/|[A-Za-z]:\\|\/\/).*/;
     DATA_URI = /^(data:)([\w\/\+\-]+);(charset=[\w-]+|base64).*,(.*)/i;
 
-    transform(cssText: string, href: string) {
+    transform(cssText: string, url: string, prefix = "") {
         return (cssText || '').replace(
             this.URL_IN_CSS_REF,
             (origin, path1, path2, path3) => {
@@ -28,9 +28,10 @@ export class CssAbsoluteUrlTransformer {
                     return u;
                 }
                 else if (filePath[0] === '/') {
-                    return `url('${this.extractOrigin(href) + filePath}')`;
+                    let newUrl = `url('${prefix + this.extractOrigin(url) + filePath}')`;
+                    return newUrl
                 }
-                const stack = href.split('/');
+                const stack = url.split('/');
                 const parts = filePath.split('/');
                 stack.pop();
                 for (const part of parts) {

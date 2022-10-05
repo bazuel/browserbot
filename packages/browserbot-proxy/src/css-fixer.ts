@@ -8,7 +8,7 @@ export class CssFixer {
 
     async fixCss(url: string, prefix: string) {
         let cssString: string = await new HttpClient().getAsString(url)
-        let transformed = new CssAbsoluteUrlTransformer().transform(cssString, prefix + url)
+        let transformed = new CssAbsoluteUrlTransformer().transform(cssString, url, prefix)
         return transformed
     }
 

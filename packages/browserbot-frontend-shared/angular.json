@@ -10,7 +10,7 @@
       "projectType": "library",
       "root": "projects/browserbot-player",
       "sourceRoot": "projects/browserbot-player/src",
-      "prefix": "lib",
+      "prefix": "bb",
       "architect": {
         "build": {
           "builder": "@angular-devkit/build-angular:ng-packagr",

@@ -4,6 +4,7 @@ import { BrowserModule } from '@angular/platform-browser';
 import { AppComponent } from './app.component';
 import { RouterModule, Routes } from '@angular/router';
 import { SessionModule } from './session/session.module';
+import {BrowserbotPlayerModule} from "browserbot-player";
 
 const routes: Routes = [
   {
@@ -15,7 +16,7 @@ const routes: Routes = [
 
 @NgModule({
   declarations: [AppComponent],
-  imports: [BrowserModule, RouterModule.forRoot(routes), SessionModule],
+  imports: [BrowserModule, RouterModule.forRoot(routes), SessionModule, BrowserbotPlayerModule, BrowserbotPlayerModule],
   providers: [],
   bootstrap: [AppComponent],
 })

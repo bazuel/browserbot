@@ -1,10 +1,19 @@
 {
   "compilerOptions": {
+    "outDir": "dist",
+    "declaration": true,
+    "experimentalDecorators": true,
     "module": "commonjs",
-    "target": "es5",
-    "sourceMap": true
+    "moduleResolution": "node",
+    "noImplicitAny": false,
+    "strictNullChecks": true,
+    "target": "es6",
+    "esModuleInterop": true,
+    "emitDecoratorMetadata": true,
+    "sourceMap": true,
+    "skipLibCheck": true
   },
   "exclude": [
-    "node_modules"
+    "node_modules", "dist"
   ]
 }
