@@ -1,13 +1,19 @@
 import { Controller, Get, Post, Query, Req, Res, StreamableFile } from '@nestjs/common';
 import { SessionService } from './session.service';
 import { BLSessionEvent } from '@browserbot/model';
-import {domainFromUrl, eventId, unzipJson} from 'browserbot-common';
+import {domainFromUrl, eventId, streamToBuffer, unzipJson} from 'browserbot-common';
 import { HitService } from './hit.service';
-import {StorageService} from "@browserbot/backend-shared";
+import { StorageService } from '@browserbot/backend-shared';
+import { TimeService } from '../time/time.service';
 
 @Controller('session')
 export class SessionController {
-  constructor(private sessionService: SessionService, private hitService: HitService, private storageService:StorageService) {}
+  constructor(
+    private sessionService: SessionService,
+    private hitService: HitService,
+    private storageService: StorageService,
+    private timeService: TimeService
+  ) {}
 
   @Get('download')
   async download(@Res({ passthrough: true }) res, @Query('path') path) {
@@ -38,12 +44,15 @@ export class SessionController {
       };
     } = await req.file();
     const zipFile = data.file;
-    const url = data.fields['url']?.value;
-    const events: BLSessionEvent[] = await unzipJson(zipFile);
+    //const url = data.fields['url']?.value;
+    const zipBuffer = await streamToBuffer(zipFile as ReadableStream);
+    const events: BLSessionEvent[] = await unzipJson(zipBuffer);
     const reference = eventId(events[0]!);
-    const path = `${domainFromUrl(events[0]!.url)}/${reference}.cjson`;
+    const path = `${domainFromUrl(
+      events[0]!.url
+    )}/${this.timeService.todayAsString()}/${reference}.zip`;
     this.hitService.save(events, reference);
-    this.storageService.upload(zipFile, path)
+    this.storageService.upload(zipBuffer, path);
     /*
     
     const { path, id } = await this.sessionService.saveSession(

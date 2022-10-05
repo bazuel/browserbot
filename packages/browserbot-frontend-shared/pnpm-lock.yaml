@@ -12,6 +12,7 @@ specifiers:
   '@angular/platform-browser': ^14.1.0
   '@angular/platform-browser-dynamic': ^14.1.0
   '@angular/router': ^14.1.0
+  browserbot-common: link:..\browserbot-common
   ng-packagr: ^14.1.0
   rxjs: ~7.5.0
   tslib: ^2.3.0
@@ -27,6 +28,7 @@ dependencies:
   '@angular/platform-browser': 14.2.4_nkf2vx5k6yribxpkpcpvyqevui
   '@angular/platform-browser-dynamic': 14.2.4_utakpv4yy4yulu3zbqkiu5no6i
   '@angular/router': 14.2.4_cqdintjzxymf4eniujcvvl2rx4
+  browserbot-common: link:../browserbot-common
   rxjs: 7.5.7
   tslib: 2.4.0
   zone.js: 0.11.8

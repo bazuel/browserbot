@@ -13,4 +13,9 @@ export class TimeService {
     todayAs(format: string) {
         return this.formatDate(new Date(), format)
     }
+
+
+    todayAsString() {
+        return this.formatDate(new Date(), "YYYY-MM-DD")
+    }
 }

@@ -1,0 +1,13 @@
+lockfileVersion: 5.4
+
+specifiers:
+  tslib: ^2.3.0
+
+dependencies:
+  tslib: 2.4.0
+
+packages:
+
+  /tslib/2.4.0:
+    resolution: {integrity: sha512-d6xOpEDfsi2CZVlPQzGeux8XMwLT9hssAsaPYExaQMuYskwb+x1x7J371tWlbBdWHroy99KnVB6qIkUbs5X3UQ==}
+    dev: false
