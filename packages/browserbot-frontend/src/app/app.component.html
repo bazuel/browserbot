@@ -1,7 +1,11 @@
+<!--
 <div>
 <router-outlet></router-outlet>
 </div>
 
 <div class="bo-loading-full-screen" *ngIf="loadingService.isLoading()"></div>
+-->
 
-<bb-browserbot-player #player *ngIf="session" [session]="session"></bb-browserbot-player>
+<bb-browserbot-player [session]="sessionEvents"></bb-browserbot-player>
+
+

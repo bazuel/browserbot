@@ -10,7 +10,7 @@ import {
   ViewChild,
 } from "@angular/core";
 import { BLSessionEvent } from "browserbot-common";
-import { PlayerComponent } from "./player/player.component";
+import { PlayerComponent } from "./player.component";
 
 @Component({
   selector: "bb-browserbot-player",

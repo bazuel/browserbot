@@ -5,11 +5,12 @@ import { RouterModule, Routes } from '@angular/router';
 import { SharedModule } from '../shared/shared.module';
 import { SessionService } from './services/session.service';
 import { BrowserbotSharedModule } from '../browserbot-shared/browserbot-shared.module';
+import {PlayerModule} from "../player/player.module";
 
-const routes: Routes = [{ path: 'session-card', component: SessionComponent }];
+const sessionRoutes: Routes = [{ path: 'card', component: SessionComponent }];
 @NgModule({
   declarations: [SessionComponent],
-  imports: [CommonModule, RouterModule.forChild(routes), SharedModule, BrowserbotSharedModule],
+    imports: [CommonModule, RouterModule.forChild(sessionRoutes), SharedModule, BrowserbotSharedModule, PlayerModule],
   exports: [SessionComponent],
   providers: [SessionService]
 })

@@ -71,6 +71,13 @@ export class HttpService {
     });
   }
 
+  getAsBuffer(path: string){
+    return fetch(this.url(path), {
+      method: 'GET'
+    })
+      .then((response) => response.arrayBuffer());
+  }
+
   downloadFile(fullPath: string, filename: string = '') {
     fetch(fullPath, {
       method: 'GET'

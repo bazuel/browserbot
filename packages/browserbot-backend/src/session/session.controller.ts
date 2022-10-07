@@ -59,9 +59,9 @@ export class SessionController {
       zipFile,
       url
     );
-    console.log('path: ', path);
      */
-    res.send({ ok: true, path, reference });
+    console.log('path: ', encodeURIComponent(path));
+    res.send({ ok: true, path: encodeURIComponent(path), reference });
   }
 
   @Get('screenshot')

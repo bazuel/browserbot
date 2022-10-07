@@ -20,7 +20,7 @@
     "@angular/router": "^14.1.0",
     "@butopen/design-system": "^1.1.5",
     "browserbot-common": "link:..\\browserbot-common",
-    "browserbot-player": "link:..\\browserbot-frontend-shared\\dist\\browserbot-player",
+    "browserbot-frontend-shared": "link:..\\browserbot-frontend-shared\\dist\\browserbot-frontend-shared",
     "dayjs": "^1.11.5",
     "rxjs": "~7.5.0",
     "tslib": "^2.3.0",

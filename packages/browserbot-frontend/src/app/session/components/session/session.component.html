@@ -1,4 +1,18 @@
+<div class="grid grid-cols-3 gap-4 p-4"  *ngIf="ready">
+
+  <bb-player class="col-span-2"  [session]="sessionEvents"></bb-player>
+
+  <div>
+    ciao
+  </div>
+
+</div>
+
+
+
+<!--
 <div class="flex h-screen" *ngIf="ready">
+
   <div class="w-1/5 h-full bg-bb-400 overflow-y-scroll scrollbar-sm p-2.5">
     <label>Lista azioni della sessione</label>
     <div class="m-1 hover:bg-bb-200 cursor-pointer text-white bg-bb-300 rounded-md px-2"
@@ -68,3 +82,4 @@
     </video>
   </bb-popup>
 </div>
+-->

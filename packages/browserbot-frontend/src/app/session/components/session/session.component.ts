@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { BBScreenShot, BBSession, BBSessionInfo } from '@browserbot/model';
+import {BBScreenShot, BBSession, BBSessionInfo, BLSessionEvent} from '@browserbot/model';
 import { UrlParamsService } from '../../../shared/services/url-params.service';
 import { SessionService } from '../../services/session.service';
 import { ShowFullScreenLoading } from '../../../shared/services/loading.service';
@@ -12,6 +12,7 @@ import { ShowFullScreenLoading } from '../../../shared/services/loading.service'
 export class SessionComponent implements OnInit {
   session: BBSession = { path: '', url: '' };
   sessionInfo: BBSessionInfo;
+  sessionEvents: BLSessionEvent[] = [];
   ready = false;
   detailsAction: {
     name?: string;
@@ -35,7 +36,7 @@ export class SessionComponent implements OnInit {
     const sessionPath = this.urlParamsService.get('path');
     if (sessionPath && !sessionid) {
       this.session.path = sessionPath;
-      this.sessionInfo = await this.sessionService.getSessionInfoByPath(sessionPath);
+      this.sessionEvents = await this.sessionService.downloadSession(sessionPath);
       console.log(this.sessionInfo);
     }
     this.ready = true;

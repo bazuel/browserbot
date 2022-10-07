@@ -1,5 +1,5 @@
 import { BLMutationEventData, DOMJsonElement } from "browserbot-common";
-import { ElementDeserializer } from "./deserializer/element.deserializer";
+import { ElementDeserializer } from "./element.deserializer";
 
 export class MutationRenderer {
   render(

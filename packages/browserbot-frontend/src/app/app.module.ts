@@ -4,7 +4,8 @@ import { BrowserModule } from '@angular/platform-browser';
 import { AppComponent } from './app.component';
 import { RouterModule, Routes } from '@angular/router';
 import { SessionModule } from './session/session.module';
-import {BrowserbotPlayerModule} from "browserbot-player";
+import {PlayerModule} from "./player/player.module";
+import {BBFrontendSharedModule} from "browserbot-frontend-shared";
 
 const routes: Routes = [
   {
@@ -16,7 +17,8 @@ const routes: Routes = [
 
 @NgModule({
   declarations: [AppComponent],
-  imports: [BrowserModule, RouterModule.forRoot(routes), SessionModule, BrowserbotPlayerModule, BrowserbotPlayerModule],
+  imports: [BrowserModule, RouterModule.forRoot(routes),
+    SessionModule, PlayerModule, BBFrontendSharedModule],
   providers: [],
   bootstrap: [AppComponent],
 })

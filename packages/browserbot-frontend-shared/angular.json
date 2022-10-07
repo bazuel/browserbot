@@ -6,23 +6,23 @@
   },
   "newProjectRoot": "projects",
   "projects": {
-    "browserbot-player": {
+    "browserbot-frontend-shared": {
       "projectType": "library",
-      "root": "projects/browserbot-player",
-      "sourceRoot": "projects/browserbot-player/src",
+      "root": "projects/browserbot-frontend-shared",
+      "sourceRoot": "projects/browserbot-frontend-shared/src",
       "prefix": "bb",
       "architect": {
         "build": {
           "builder": "@angular-devkit/build-angular:ng-packagr",
           "options": {
-            "project": "projects/browserbot-player/ng-package.json"
+            "project": "projects/browserbot-frontend-shared/ng-package.json"
           },
           "configurations": {
             "production": {
-              "tsConfig": "projects/browserbot-player/tsconfig.lib.prod.json"
+              "tsConfig": "projects/browserbot-frontend-shared/tsconfig.lib.prod.json"
             },
             "development": {
-              "tsConfig": "projects/browserbot-player/tsconfig.lib.json"
+              "tsConfig": "projects/browserbot-frontend-shared/tsconfig.lib.json"
             }
           },
           "defaultConfiguration": "production"
@@ -30,9 +30,9 @@
         "test": {
           "builder": "@angular-devkit/build-angular:karma",
           "options": {
-            "main": "projects/browserbot-player/src/test.ts",
-            "tsConfig": "projects/browserbot-player/tsconfig.spec.json",
-            "karmaConfig": "projects/browserbot-player/karma.conf.js"
+            "main": "projects/browserbot-frontend-shared/src/test.ts",
+            "tsConfig": "projects/browserbot-frontend-shared/tsconfig.spec.json",
+            "karmaConfig": "projects/browserbot-frontend-shared/karma.conf.js"
           }
         }
       }

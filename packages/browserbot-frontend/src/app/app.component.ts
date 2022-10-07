@@ -1,7 +1,8 @@
-import {Component, OnInit, ViewChild} from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
 import { LoadingService } from './shared/services/loading.service';
-import { BLSessionEvent, unzipJson } from 'browserbot-common';
-import {BrowserbotPlayerComponent} from "browserbot-player";
+import { BLSessionEvent } from '@browserbot/model/dist';
+import { UrlParamsService } from './shared/services/url-params.service';
+import { SessionService } from './session/services/session.service';
 
 @Component({
   selector: 'bb-root',
@@ -9,23 +10,16 @@ import {BrowserbotPlayerComponent} from "browserbot-player";
   styleUrls: ['./app.component.scss']
 })
 export class AppComponent implements OnInit {
-  session!: BLSessionEvent[];
+  sessionEvents: BLSessionEvent[];
 
-  @ViewChild(BrowserbotPlayerComponent) player!:BrowserbotPlayerComponent
-
-  constructor(public loadingService: LoadingService) {}
+  constructor(
+    public loadingService: LoadingService,
+    private urlParamsService: UrlParamsService,
+    private sessionService: SessionService
+  ) {}
 
   async ngOnInit() {
-    const raw = await fetch(
-      `http://localhost:3005/api/session/download?path=${encodeURIComponent(
-        'nestjs.com/2022-10-05/1664988120365_page_referrer_1664558619247_630439501_https%3A%2F%2Fnestjs.com%2F.zip'
-      )}`
-    ).then((response) => response.arrayBuffer());
-    const events = await unzipJson(raw as Buffer);
-    console.log(events);
-    this.session = events as BLSessionEvent[];
-    setTimeout(()=>{
-      this.player.play()
-    },5000)
+    const sessionPath = this.urlParamsService.get('path');
+    this.sessionEvents = await this.sessionService.downloadSession(sessionPath);
   }
 }

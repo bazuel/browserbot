@@ -17,7 +17,7 @@ specifiers:
   '@types/jasmine': ~4.0.0
   '@types/node': ^12.11.1
   browserbot-common: link:..\browserbot-common
-  browserbot-player: link:..\browserbot-frontend-shared\dist\browserbot-player
+  browserbot-frontend-shared: link:..\browserbot-frontend-shared\dist\browserbot-frontend-shared
   dayjs: ^1.11.5
   jasmine-core: ~4.2.0
   karma: ~6.4.0
@@ -45,7 +45,7 @@ dependencies:
   '@angular/router': 14.1.3_iwkqqt2nupzuzcint76ec7avme
   '@butopen/design-system': 1.1.5
   browserbot-common: link:../browserbot-common
-  browserbot-player: link:../browserbot-frontend-shared/dist/browserbot-player
+  browserbot-frontend-shared: link:../browserbot-frontend-shared/dist/browserbot-frontend-shared
   dayjs: 1.11.5
   rxjs: 7.5.6
   tslib: 2.4.0
