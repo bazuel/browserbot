@@ -45,19 +45,44 @@ window.addEventListener(
           if (response) console.log(response);
         }
       );
+    } else if (event.data.type && event.data.type == 'screenshot-event') {
+      const e: BLEvent = event.data.data;
+      console.log('collecting event', e);
+      chrome.runtime.sendMessage(
+        { ...e, messageType: 'screenshot-event', data: document.title },
+        function (response) {
+          if (response) console.log(response);
+        }
+      );
     }
   },
   false
 );
 
-chrome.runtime.onMessage.addListener(async function (request, sender, sendResponse) {
-  console.log('recording-ended');
-  if (request.messageType == 'recording-ended') {
-    window.postMessage({ type: 'stop-recording' }, '*');
-  }
-});
+function openCommunicationChannel() {
+  chrome.runtime.onMessage.addListener(async function (request, sender, sendResponse) {
+    if (request.messageType == 'recording-ended') {
+      console.log('recording-ended');
+      window.postMessage({ type: 'stop-recording' }, '*');
+    } else if (request.messageType == 'take-screenshot') {
+      enableExecutor();
+      console.log('embedder: taking-screenshot');
+      window.postMessage({ type: 'take-screenshot' }, '*');
+    }
+  });
+}
+
+openCommunicationChannel();
 
 (async () => {
   const recording = await isRecording();
   if (recording) enablePageMonitoring();
 })();
+
+function enableExecutor() {
+  if (document.getElementById('bb-screenshot-taker-script')) return;
+  const executorScript = document.createElement('script');
+  executorScript.id = 'bb-screenshot-taker-script';
+  executorScript.src = chrome.runtime.getURL('page/executor.js');
+  (document.head || document.documentElement).appendChild(executorScript);
+}

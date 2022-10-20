@@ -7,15 +7,15 @@ import { uploadEvents } from './upload.api';
 let cookieDetailsEvent: any = {};
 let events: BLEvent[] = [];
 
-(async ()=>{
+(async () => {
   let sid = await chrome.storage.local.get('sid');
-  if (!sid["sid"]) {
+  if (!sid['sid']) {
     await chrome.storage.local.set({ sid: new Date().getTime() });
   }
 })();
 
 chrome.runtime.onMessage.addListener(async function (request, sender, sendResponse) {
-  const sid = (await chrome.storage.local.get('sid'))["sid"]
+  const sid = (await chrome.storage.local.get('sid'))['sid'];
   if (request.messageType == 'popup-open') {
     disableRecordingIcon();
     const recording = await isRecording();
@@ -34,11 +34,26 @@ chrome.runtime.onMessage.addListener(async function (request, sender, sendRespon
       await chrome.tabs.reload(tabId);
       enableRecordingIcon();
     }
+  } else if (request.messageType == 'screenshot-event') {
+    console.log('message');
+    const { messageType, ...r } = request;
+    const tab = await getCurrentTab();
+    const url = tab?.url ?? '';
+    const domFullEvent: BLEvent = {
+      ...r,
+      timestamp: Date.now(),
+      url,
+      sid,
+      tab: tab.id,
+      type: 'dom',
+      name: 'dom-full'
+    };
+    await uploadEvents(url!, [domFullEvent]);
   } else {
     if (request.messageType == 'session-event') {
       const { messageType, ...r } = request;
-      const tab = await getCurrentTab()
-      const url = tab?.url ?? ""
+      const tab = await getCurrentTab();
+      const url = tab?.url ?? '';
       events.push({ ...r, timestamp: Date.now(), url, sid, tab: tab.id });
 
       if (r.name == 'referrer') {

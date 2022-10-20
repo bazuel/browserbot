@@ -35,7 +35,7 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["page/monitor.js"],
+      "resources": ["page/monitor.js","page/executor.js"],
       "matches": ["<all_urls>"]
     }
   ],
