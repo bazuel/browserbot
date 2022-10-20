@@ -38,11 +38,11 @@ export class DomMonitor implements BLMonitor {
 
         if (this.options.intervalTimeForFullEvent > 0)
             this.fullEventFireIntervalId = setInterval(() => {
-                this.fireFullDomEvent(elid, serializer)
+                this.fireFullDomEvent(serializer)
             }, this.options.intervalTimeForFullEvent)
 
 
-        this.fireFullDomEvent(elid, serializer)
+        this.fireFullDomEvent(serializer)
         this.mutationObserver.observe(document)
         let webComponents = [...(document.querySelectorAll('*') as any)].filter(x => x.tagName.indexOf("-") >= 0);
         const pageHasWebComponents = webComponents.length > 0
@@ -62,11 +62,15 @@ export class DomMonitor implements BLMonitor {
             clearInterval(this.fullEventFireIntervalId)
     }
 
-    fireFullDomEvent(elid: ElidGenerator, serializer: ElementSerializer) {
+    private fireFullDomEvent(serializer: ElementSerializer) {
         let snapshot = serializer.serialize(document);
         const fullEvent = {full: snapshot} as BLDomEvent
         blevent.dom.full(fullEvent)
         return snapshot
+    }
+    
+    takeDomScreenshot(){
+        this.fireFullDomEvent(new ElementSerializer())
     }
 
 }
