@@ -1,0 +1,8 @@
+<div class="w-1/5 h-full bg-bb-400 overflow-y-scroll scrollbar-sm p-2.5">
+  <label>Lista azioni della sessione</label>
+  <div class="m-1 hover:bg-bb-200 cursor-pointer text-white bg-bb-300 rounded-md px-2"
+       *ngFor="let event of events">
+    <div>Tipo: {{event.type}}</div>
+    <div class="text-xs">Timestamp: {{event.timestamp | formatTime:'HH:mm:ss'}}</div>
+  </div>
+</div>
