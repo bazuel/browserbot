@@ -1,7 +1,5 @@
-import {unsafeCSS} from 'lit'
+import { unsafeCSS } from "lit";
 
-// @ts-ignore
-import style from './tailwind.global.css'
+import style from "./tailwind.global.css";
 
-export const tailwindStyles = unsafeCSS(style)
-
+export const tailwindStyles = unsafeCSS(style);
