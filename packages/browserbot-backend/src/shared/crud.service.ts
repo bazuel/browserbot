@@ -51,7 +51,7 @@ export class CrudService<T> {
     /*
      * insert options because in future this method can used also for queries
      * */
-    if (options === {}) {
+    if (Object.keys(options).length === 0) {
       const items = await this.db.query<T>`select * from ${sql(this.table)} where ${sql(
         field as string
       )} = ${value}`;

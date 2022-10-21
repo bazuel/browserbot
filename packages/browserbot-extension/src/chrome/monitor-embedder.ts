@@ -3,7 +3,7 @@ Content script are loaded into another context than the page, so if we use the H
 we are NOT monitoring the page context, but the page extension context. 
 
 We need to add a script on the page (that will be 
-iunjected into the page context) and then we need to pass messages back to the content script context 
+injected into the page context) and then we need to pass messages back to the content script context
 of the extension, so to collect them.
 
 Note that if you look at the console, messages from both contexts get printed there, 
@@ -30,59 +30,55 @@ function enablePageMonitoring() {
   (document.head || document.documentElement).appendChild(monitoringScript);
 }
 
-window.addEventListener(
-  'message',
-  function (event) {
-    // We only accept messages from ourselves
-    if (event.source != window) return;
-
-    if (event.data.type && event.data.type == 'session-event') {
-      const e: BLEvent = event.data.data;
-      console.log('collecting event', e);
-      chrome.runtime.sendMessage(
-        { ...e, messageType: 'session-event', data: document.title },
-        function (response) {
-          if (response) console.log(response);
-        }
-      );
-    } else if (event.data.type && event.data.type == 'screenshot-event') {
-      const e: BLEvent = event.data.data;
-      console.log('collecting event', e);
-      chrome.runtime.sendMessage(
-        { ...e, messageType: 'screenshot-event', data: document.title },
-        function (response) {
-          if (response) console.log(response);
-        }
-      );
-    }
-  },
-  false
-);
-
-function openCommunicationChannel() {
-  chrome.runtime.onMessage.addListener(async function (request, sender, sendResponse) {
-    if (request.messageType == 'recording-ended') {
-      console.log('recording-ended');
-      window.postMessage({ type: 'stop-recording' }, '*');
-    } else if (request.messageType == 'take-screenshot') {
-      enableExecutor();
-      console.log('embedder: taking-screenshot');
-      window.postMessage({ type: 'take-screenshot' }, '*');
-    }
-  });
-}
-
-openCommunicationChannel();
-
 (async () => {
   const recording = await isRecording();
   if (recording) enablePageMonitoring();
 })();
 
-function enableExecutor() {
+async function enableExecutor() {
   if (document.getElementById('bb-screenshot-taker-script')) return;
-  const executorScript = document.createElement('script');
-  executorScript.id = 'bb-screenshot-taker-script';
-  executorScript.src = chrome.runtime.getURL('page/executor.js');
-  (document.head || document.documentElement).appendChild(executorScript);
+  return new Promise((r) => {
+    const executorScript = document.createElement('script');
+    executorScript.id = 'bb-screenshot-taker-script';
+    executorScript.src = chrome.runtime.getURL('page/executor.js');
+    (document.head || document.documentElement).appendChild(executorScript);
+    executorScript.onload = r;
+  });
 }
+
+function openCommunicationChannel() {
+  //channel to extension
+  chrome.runtime.onMessage.addListener(async function (request, sender, sendResponse) {
+    if (request.messageType == 'recording-ended') {
+      console.log('recording-ended');
+      window.postMessage({ type: 'stop-recording' }, '*');
+    } else if (request.messageType == 'take-screenshot') {
+      await enableExecutor();
+      console.log('embedder: take-screenshot');
+      window.postMessage({ type: 'take-screenshot' }, '*');
+    }
+  });
+
+  //channel to the page
+  window.addEventListener(
+    'message',
+    function (event) {
+      // We only accept messages from ourselves
+      if (event.source != window) return;
+
+      if (event.data.type && ['session-event', 'screenshot-event'].includes(event.data.type)) {
+        const e: BLEvent = event.data.data;
+        console.log('collecting event', e);
+        chrome.runtime.sendMessage(
+          { ...e, messageType: event.data.type, data: document.title },
+          (response) => {
+            if (response) console.log(response);
+          }
+        );
+      }
+    },
+    false
+  );
+}
+
+openCommunicationChannel();
