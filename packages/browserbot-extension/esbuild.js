@@ -17,7 +17,8 @@ function getBuildOptions(more = {}) {
       'src/page/monitor.ts',
       'src/page/executor.ts',
       'src/chrome/monitor-embedder.ts',
-      'src/chrome/background.ts'
+      'src/chrome/background.ts',
+      'src/chrome/channel-handler.ts'
     ],
     bundle: true,
     sourcemap: true

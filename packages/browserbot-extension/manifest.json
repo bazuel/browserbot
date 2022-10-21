@@ -42,7 +42,7 @@
   "content_scripts": [
     {
       "matches": ["http://*/*", "https://*/*"],
-      "js": ["chrome/monitor-embedder.js"],
+      "js": ["chrome/monitor-embedder.js","chrome/channel-handler.js"],
       "run_at": "document_start"
     }
   ]
