@@ -25,8 +25,15 @@
     </div>
 
     <div class="mt-6 flex justify-center items-center flex-col">
-        <img class="h-48" src="assets/img/start-recording.png"/>
-        <button id="start-recording" class="cta">START RECORDING</button>
+        <button id="shot" class="cta">
+            <img class="h-5 mr-1" src="assets/img/photo-camera.png" alt="photo camera image"/>
+            TAKE A SHOT
+        </button>
+
+        <button id="video" class="cta mt-2">
+            <img class="h-5 mr-1" src="assets/img/video-camera.png" alt="video camera image"/>
+            TAKE A VIDEO
+        </button>
     </div>
 
 
@@ -39,7 +46,7 @@
 
     </div>
     
-    <div id="hmr" style="opacity: 0">reload v1.0</div>
+    <div id="hmr" class="cursor-pointer bg-green-400 w-10 rounded-full" >R</div>
 </div>
 
 <script src="/popup.js"></script>

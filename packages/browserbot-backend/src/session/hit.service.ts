@@ -4,7 +4,7 @@ import { PostgresDbService, sql } from '../shared/postgres-db.service';
 import { CrudService } from '../shared/crud.service';
 import { BBSession, BLEventName, BLEventType, BLSessionEvent } from '@browserbot/model';
 import { StorageService } from '@browserbot/backend-shared';
-import { JsonCompressor, eventId, domainFromUrl, eventPath } from 'browserbot-common';
+import { eventPath } from 'browserbot-common';
 
 export interface BBHit {
   bb_hitid: number;
@@ -67,15 +67,22 @@ export class HitService {
     return Buffer.byteLength(JSON.stringify(json)) / 1024;
   }
 
-  async save(hits: BLSessionEvent[], reference:string) {
-    const hitsToSave: BLSessionEvent[] = [];
-    hits.forEach((h) => {
-      const { url, sid, tab, timestamp, type, name, ...data } = h;
-      if (this.jsonSizeKb(h) > 5) {
-        const data_path = eventPath(h);
-        hitsToSave.push({ url, sid, tab, timestamp, type, name, data: {}, data_path, reference });
-      } else hitsToSave.push({ url, sid, tab, timestamp, type, name, data, reference });
-    });
-    await this.hits.bulkCreate(hitsToSave);
+  async save(hits: BLSessionEvent[], reference: string) {
+    if (hits.length == 1) await this.hits.create(this.handleSize(hits[0], reference));
+    else {
+      const hitsToSave: BLSessionEvent[] = [];
+      hits.forEach((h) => {
+        hitsToSave.push(this.handleSize(h, reference));
+      });
+      await this.hits.bulkCreate(hitsToSave);
+    }
+  }
+
+  private handleSize(h: BLSessionEvent, reference: string) {
+    const { url, sid, tab, timestamp, type, name, ...data } = h;
+    if (this.jsonSizeKb(h) > 5) {
+      const data_path = eventPath(h);
+      return { url, sid, tab, timestamp, type, name, data: {}, data_path, reference };
+    } else return { url, sid, tab, timestamp, type, name, data, reference };
   }
 }
