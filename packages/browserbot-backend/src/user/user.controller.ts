@@ -10,9 +10,9 @@ import {
   UseGuards
 } from '@nestjs/common';
 import { UserService } from './user.service';
-import { CryptService } from '../shared/crypt.service';
-import { EmailService } from '../shared/email.service';
-import { ApiTokenData, TokenService } from '../shared/token.service';
+import { CryptService } from '../shared/services/crypt.service';
+import { EmailService } from '../shared/services/email.service';
+import { ApiTokenData, TokenService } from '../shared/services/token.service';
 import { Admin, HasToken } from '../shared/token.decorator';
 import { BBUser } from '@browserbot/model';
 import { ConfigService, StorageService } from '@browserbot/backend-shared';

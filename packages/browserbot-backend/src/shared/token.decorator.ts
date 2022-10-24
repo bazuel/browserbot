@@ -7,9 +7,9 @@ import {
   Injectable,
   SetMetadata
 } from '@nestjs/common';
-import { ApiTokenData, BBApiPermission, TokenService } from './token.service';
-import { findInjectedService } from './find-injected-service.function';
-import { CryptService } from './crypt.service';
+import { ApiTokenData, BBApiPermission, TokenService } from './services/token.service';
+import { findInjectedService } from './functions/find-injected-service.function';
+import { CryptService } from './services/crypt.service';
 import { Reflector } from '@nestjs/core';
 
 function extractTokenData(request, tokenService: TokenService) {
@@ -76,6 +76,6 @@ export class HasApiPermission implements CanActivate {
       context.switchToHttp().getRequest(),
       tokenService
     ) as ApiTokenData;
-    return api.includes(permissionRequired);
+    return api.includes('all') || api.includes(permissionRequired);
   }
 }

@@ -1,9 +1,9 @@
-import {Injectable} from '@nestjs/common';
-import {StorageService} from '@browserbot/backend-shared';
-import {TimeService} from '../time/time.service';
-import {PostgresDbService, sql} from '../shared/postgres-db.service';
-import {CrudService} from '../shared/crud.service';
-import {BBSession} from '@browserbot/model';
+import { Injectable } from '@nestjs/common';
+import { StorageService } from '@browserbot/backend-shared';
+import { TimeService } from '../time/time.service';
+import { PostgresDbService, sql } from '../shared/services/postgres-db.service';
+import { CrudService } from '../shared/services/crud.service';
+import { BBSession } from '@browserbot/model';
 
 @Injectable()
 export class SessionService {
@@ -11,7 +11,11 @@ export class SessionService {
   private table = 'bb_session';
   private id = 'bb_sessionid';
 
-  constructor(private timeService: TimeService, private db: PostgresDbService, private storageService:StorageService) {
+  constructor(
+    private timeService: TimeService,
+    private db: PostgresDbService,
+    private storageService: StorageService
+  ) {
     this.sessionTable = new CrudService<BBSession>(db, this.table, this.id);
   }
 

@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import Hashids from './hash-id.function';
+import Hashids from '../functions/hash-id.function';
 
 const sha512 = require('js-sha512');
 
@@ -26,15 +26,11 @@ export class CryptService {
   }
 
   generateRandomPassword(input = () => Math.round(Math.random() * Date.now())) {
-    const pwdGen1 = new Hashids(
-      this.secret,
-      8,
-      'abcdefghijklmnopqrstuvwxyz1234567890',
-    );
+    const pwdGen1 = new Hashids(this.secret, 8, 'abcdefghijklmnopqrstuvwxyz1234567890');
     const pwdGen2 = new Hashids(
       this.secret,
       8,
-      '234lgh4lkj3g4123l4hjgl21l34kj32h41l4k3j645hl67k57jgh5kg76j6f9hg6df87fd9',
+      '234lgh4lkj3g4123l4hjgl21l34kj32h41l4k3j645hl67k57jgh5kg76j6f9hg6df87fd9'
     );
     return pwdGen1.encode(input()) + '@' + pwdGen2.encode(input());
   }

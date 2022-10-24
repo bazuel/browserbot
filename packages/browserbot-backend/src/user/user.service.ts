@@ -1,7 +1,7 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
-import { like, paginated, PostgresDbService, sql } from '../shared/postgres-db.service';
-import { CryptService } from '../shared/crypt.service';
-import { CrudService } from '../shared/crud.service';
+import { like, paginated, PostgresDbService, sql } from '../shared/services/postgres-db.service';
+import { CryptService } from '../shared/services/crypt.service';
+import { CrudService } from '../shared/services/crud.service';
 import { BBUser } from '@browserbot/model';
 
 @Injectable()

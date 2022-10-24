@@ -1,5 +1,5 @@
 import { Controller, Get, Query, Res, StreamableFile, UseGuards } from '@nestjs/common';
-import { PostgresDbService } from '../shared/postgres-db.service';
+import { PostgresDbService } from '../shared/services/postgres-db.service';
 import { HasApiPermission, HasToken, PermissionRequired } from '../shared/token.decorator';
 import { SessionService } from './session.service';
 import { EventService } from './event.service';

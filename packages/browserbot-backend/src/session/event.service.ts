@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { TimeService } from '../time/time.service';
-import { PostgresDbService, sql } from '../shared/postgres-db.service';
-import { CrudService } from '../shared/crud.service';
+import { PostgresDbService, sql } from '../shared/services/postgres-db.service';
+import { CrudService } from '../shared/services/crud.service';
 import { BLEventName, BLEventType, BLSessionEvent } from '@browserbot/model';
 import { eventPath } from 'browserbot-common';
 import { StorageService } from '@browserbot/backend-shared/dist';
