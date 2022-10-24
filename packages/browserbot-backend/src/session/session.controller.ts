@@ -1,8 +1,8 @@
 import { Controller, Get, Post, Query, Req, Res, StreamableFile } from '@nestjs/common';
 import { SessionService } from './session.service';
 import { BLSessionEvent } from '@browserbot/model';
-import {domainFromUrl, eventId, streamToBuffer, unzipJson} from 'browserbot-common';
-import { HitService } from './hit.service';
+import { domainFromUrl, eventId, streamToBuffer, unzipJson } from 'browserbot-common';
+import { EventService } from './event.service';
 import { StorageService } from '@browserbot/backend-shared';
 import { TimeService } from '../time/time.service';
 
@@ -10,7 +10,7 @@ import { TimeService } from '../time/time.service';
 export class SessionController {
   constructor(
     private sessionService: SessionService,
-    private hitService: HitService,
+    private hitService: EventService,
     private storageService: StorageService,
     private timeService: TimeService
   ) {}

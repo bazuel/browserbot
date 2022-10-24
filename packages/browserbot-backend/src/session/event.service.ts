@@ -3,11 +3,10 @@ import { TimeService } from '../time/time.service';
 import { PostgresDbService, sql } from '../shared/postgres-db.service';
 import { CrudService } from '../shared/crud.service';
 import { BBSession, BLEventName, BLEventType, BLSessionEvent } from '@browserbot/model';
-import { StorageService } from '@browserbot/backend-shared';
 import { eventPath } from 'browserbot-common';
 
-export interface BBHit {
-  bb_hitid: number;
+export interface BBEvent {
+  bb_eventid: number;
   reference: string;
   url: string;
   name: BLEventName;
@@ -22,16 +21,12 @@ export interface BBHit {
 }
 
 @Injectable()
-export class HitService {
+export class EventService {
   private hits: CrudService<BBSession>;
-  private table = 'bb_hit';
-  private id = 'bb_hitid';
+  private table = 'bb_event';
+  private id = 'bb_eventid';
 
-  constructor(
-    private timeService: TimeService,
-    private db: PostgresDbService,
-    private storageService: StorageService
-  ) {
+  constructor(private timeService: TimeService, private db: PostgresDbService) {
     this.hits = new CrudService<BBSession>(db, this.table, this.id);
   }
 
@@ -59,8 +54,9 @@ export class HitService {
     );`;
     await this.db
       .query`CREATE INDEX if not exists  bb_hit_index ON bb_hit(url,name,sid,tab,timestamp);`;
-    await this.db.query`CREATE INDEX if not exists  "bb_hit_timestamp" ON "bb_hit" ("timestamp");`;
-    await this.db.query`CREATE INDEX if not exists  "bb_hit_name" ON "bb_hit" ("name");`;
+    await this.db
+      .query`CREATE INDEX if not exists  "bb_event_timestamp" ON "bb_event" ("timestamp");`;
+    await this.db.query`CREATE INDEX if not exists  "bb_event_name" ON "bb_event" ("name");`;
   }
 
   private jsonSizeKb(json) {

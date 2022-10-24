@@ -12,10 +12,10 @@ import { UserController } from './user/user.controller';
 import { EmailService } from './shared/email.service';
 import { TokenService } from './shared/token.service';
 import { StorageService, ConfigService, initGlobalConfig } from '@browserbot/backend-shared';
-import {HitService} from "./session/hit.service";
-const globalConfig = initGlobalConfig()
+import { EventService } from './session/event.service';
+const globalConfig = initGlobalConfig();
 
-const configService = new ConfigService(globalConfig)
+const configService = new ConfigService(globalConfig);
 
 @Module({
   imports: [],
@@ -38,7 +38,7 @@ const configService = new ConfigService(globalConfig)
     UserService,
     SessionService,
     TimeService,
-    HitService
+    EventService
   ]
 })
 export class AppModule {}
