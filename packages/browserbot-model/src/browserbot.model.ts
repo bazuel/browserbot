@@ -8,7 +8,7 @@ export interface BBUser {
   roles: BBRole[];
   state: BBUserState;
   phone?: string;
-  api_token: string;
+  api_token?: string;
 }
 
 export type BBUserState = 'ACTIVE' | 'DELETED';

@@ -92,11 +92,11 @@ export class UserController {
         roles: data.roles
       });
       return {
-        url: `${this.configService.backend_url}/app/dashboard?token=${loginToken}`
+        url: `${this.configService.app_url}/app/dashboard?token=${loginToken}`
       };
     } catch {
       return {
-        url: this.configService.backend_url + '/app/error?error=' + token
+        url: this.configService.app_url + '/app/error?error=' + token
       };
     }
   }

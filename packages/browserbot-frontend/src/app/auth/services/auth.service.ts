@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpService } from '../../shared/services/http.service';
+import { BBUser } from '@browserbot/model';
 
 @Injectable({
   providedIn: 'root'
@@ -19,5 +20,9 @@ export class AuthService {
 
   resetPassword(token: string, password: string) {
     return this.http.post(`/user/reset-password`, { token, password });
+  }
+
+  signIn(user: BBUser) {
+    return this.http.post(`/user/request-registration`, user);
   }
 }

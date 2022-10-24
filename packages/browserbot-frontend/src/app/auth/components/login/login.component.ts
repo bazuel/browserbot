@@ -4,6 +4,7 @@ import { UrlParamsService } from '../../../shared/services/url-params.service';
 import { TokenService } from '../../../shared/services/token.service';
 import { ShowFullScreenLoading } from '../../../shared/services/loading.service';
 import { ShowNotification } from '../../../shared/components/notification/notification.component';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'bb-login',
@@ -21,7 +22,8 @@ export class LoginComponent implements OnInit {
   constructor(
     private authService: AuthService,
     private urlParamsService: UrlParamsService,
-    private tokenService: TokenService
+    private tokenService: TokenService,
+    private router: Router
   ) {}
 
   ngOnInit() {
@@ -68,5 +70,9 @@ export class LoginComponent implements OnInit {
         this.doLogin();
       }, 1500);
     }
+  }
+
+  async redirectToSignIn() {
+    await this.router.navigateByUrl('/registration');
   }
 }

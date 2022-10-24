@@ -55,6 +55,7 @@ export class UserService implements OnModuleInit {
   async createUser(user: BBUser) {
     let { teams, bb_userid, ...u } = user;
     if (!u.password) u.password = 'smith@' + Math.round(Math.random() * 1000);
+    else u.password = this.crypt.hash(u.password);
     return this.userTable.create(u);
   }
 
