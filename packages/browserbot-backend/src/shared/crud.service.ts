@@ -64,6 +64,32 @@ export class CrudService<T> {
     return items;
   }
 
+  async findByFields(
+    fieldsMap: { [key in keyof T]: string | number | Date },
+    options: { page?: number; size?: number } = {}
+  ) {
+    const payload: { column: keyof T; value: string | number | any }[] = [];
+    for (const c in fieldsMap) payload.push({ column: c, value: fieldsMap[c] });
+
+    return await this.db.query<T>`select * 
+       from ${sql(this.table)}
+       where ${sql(payload[0].column as string)} = ${payload[0].value as string}
+             ${
+               payload.length == 1
+                 ? sql``
+                 : payload
+                     .slice(1)
+                     .map(
+                       (elem) => sql` and ${sql(elem.column as string)} = ${elem.value as string}`
+                     )
+             }
+             
+       order by created desc
+             
+        ${paginated(options.page ?? 0, options.size ?? 100)}
+       `;
+  }
+
   async findByQuery(q: string, ...columns: (keyof T)[]) {
     return await this.db.query<T>`select * from ${sql(this.table)} where 
 ${[columns[0]].map((c) => sql` ${like(c as string, q)} `)}

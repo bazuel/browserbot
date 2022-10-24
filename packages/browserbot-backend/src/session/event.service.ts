@@ -2,8 +2,9 @@ import { Injectable } from '@nestjs/common';
 import { TimeService } from '../time/time.service';
 import { PostgresDbService, sql } from '../shared/postgres-db.service';
 import { CrudService } from '../shared/crud.service';
-import { BBSession, BLEventName, BLEventType, BLSessionEvent } from '@browserbot/model';
+import { BLEventName, BLEventType, BLSessionEvent } from '@browserbot/model';
 import { eventPath } from 'browserbot-common';
+import { StorageService } from '@browserbot/backend-shared/dist';
 
 export interface BBEvent {
   bb_eventid: number;
@@ -15,19 +16,23 @@ export interface BBEvent {
   tab: number;
   timestamp: number;
   scope?: { [key: string]: any };
-  data?: BLSessionEvent & { [key: string]: any };
+  data?: (BLSessionEvent & { [key: string]: any }) | {};
   data_path?: string; // a url pointing to a (BLSessionEvent & { [key: string]: any });
   created: Date | null;
 }
 
 @Injectable()
 export class EventService {
-  private hits: CrudService<BBSession>;
+  private eventTable: CrudService<BBEvent>;
   private table = 'bb_event';
   private id = 'bb_eventid';
 
-  constructor(private timeService: TimeService, private db: PostgresDbService) {
-    this.hits = new CrudService<BBSession>(db, this.table, this.id);
+  constructor(
+    private timeService: TimeService,
+    private db: PostgresDbService,
+    private storageService: StorageService
+  ) {
+    this.eventTable = new CrudService<BBEvent>(db, this.table, this.id);
   }
 
   async onModuleInit() {
@@ -64,14 +69,30 @@ export class EventService {
   }
 
   async save(hits: BLSessionEvent[], reference: string) {
-    if (hits.length == 1) await this.hits.create(this.handleSize(hits[0], reference));
+    if (hits.length == 1) await this.eventTable.create(this.handleSize(hits[0], reference));
     else {
       const hitsToSave: BLSessionEvent[] = [];
       hits.forEach((h) => {
         hitsToSave.push(this.handleSize(h, reference));
       });
-      await this.hits.bulkCreate(hitsToSave);
+      await this.eventTable.bulkCreate(hitsToSave);
     }
+  }
+
+  async findByField(field: keyof BBEvent, value: string) {
+    return await this.eventTable.findByField(field, value);
+  }
+
+  async findByFields(fieldsMap) {
+    return await this.eventTable.findByFields(fieldsMap);
+  }
+
+  async findById(id) {
+    return await this.eventTable.findById(id);
+  }
+
+  async readByPath(path: string) {
+    return await this.storageService.read(path);
   }
 
   private handleSize(h: BLSessionEvent, reference: string) {

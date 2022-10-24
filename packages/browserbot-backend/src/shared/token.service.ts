@@ -10,8 +10,14 @@ export class TokenData {
   exp: number;
   iat: number;
   roles?: string[];
-  api?: ['all'];
 }
+
+export class ApiTokenData extends TokenData {
+  api?: BBApiPermission[];
+  domain: string;
+}
+
+export type BBApiPermission = 'all' | 'download' | 'upload' | 'run';
 
 export interface GenericRequest {
   headers: { [header: string]: string };

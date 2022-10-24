@@ -6,12 +6,13 @@ import {
   HttpStatus,
   Post,
   Query,
+  Req,
   UseGuards
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { CryptService } from '../shared/crypt.service';
 import { EmailService } from '../shared/email.service';
-import { TokenService } from '../shared/token.service';
+import { ApiTokenData, TokenService } from '../shared/token.service';
 import { Admin, HasToken } from '../shared/token.decorator';
 import { BBUser } from '@browserbot/model';
 import { ConfigService, StorageService } from '@browserbot/backend-shared';
@@ -179,10 +180,15 @@ export class UserController {
   @Post('request-token-api-generation')
   @UseGuards(HasToken)
   async generateApiToken(
+    @Req() request: Request,
     @Body()
     user: BBUser
   ) {
-    const apiToken = this.tokenService.generate({ user, apidata: ['all'] }, '1y');
+    const domain = new URL(request.url).hostname;
+    const apiToken = this.tokenService.generate(
+      <Partial<ApiTokenData>>{ user, api: ['all'], domain: domain },
+      '1y'
+    );
     await this.userService.updateUser({ ...user, api_token: apiToken });
     return apiToken;
   }
@@ -194,7 +200,8 @@ export class UserController {
       'list'
     ];
     try {
-      if (!blackList.includes(apiToken)) return this.tokenService.verify(apiToken).api;
+      if (!blackList.includes(apiToken))
+        return this.tokenService.verify<ApiTokenData>(apiToken).api;
       else return [];
     } catch (e) {
       throw new HttpException('Token not valid', HttpStatus.NOT_FOUND);

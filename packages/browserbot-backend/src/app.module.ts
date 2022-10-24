@@ -13,13 +13,14 @@ import { EmailService } from './shared/email.service';
 import { TokenService } from './shared/token.service';
 import { StorageService, ConfigService, initGlobalConfig } from '@browserbot/backend-shared';
 import { EventService } from './session/event.service';
+import { EventController } from './session/event.controller';
 const globalConfig = initGlobalConfig();
 
 const configService = new ConfigService(globalConfig);
 
 @Module({
   imports: [],
-  controllers: [AppController, UserController, SessionController],
+  controllers: [AppController, UserController, SessionController, EventController],
   providers: [
     AppService,
     { provide: ConfigService, useValue: configService },
