@@ -1,13 +1,8 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
-import {
-  like,
-  paginated,
-  PostgresDbService,
-  sql,
-} from '../shared/postgres-db.service';
+import { like, paginated, PostgresDbService, sql } from '../shared/postgres-db.service';
 import { CryptService } from '../shared/crypt.service';
 import { CrudService } from '../shared/crud.service';
-import {BBUser} from "@browserbot/model";
+import { BBUser } from '@browserbot/model';
 
 @Injectable()
 export class UserService implements OnModuleInit {
@@ -16,7 +11,7 @@ export class UserService implements OnModuleInit {
   private userTable: CrudService<BBUser>;
 
   constructor(private db: PostgresDbService, private crypt: CryptService) {
-    this.userTable = new CrudService<BBUser>(db, this.table, this.id)
+    this.userTable = new CrudService<BBUser>(db, this.table, this.id);
   }
 
   async onModuleInit() {
@@ -38,6 +33,7 @@ export class UserService implements OnModuleInit {
                 roles jsonb,
                 state text,
                 phone text,
+                api_token text,
                 created TIMESTAMPTZ
             );
         `;
@@ -52,6 +48,7 @@ export class UserService implements OnModuleInit {
         surname: 'Romeo',
         name: 'Salvatore',
         state: 'ACTIVE',
+        api_token: ''
       });
   }
 
@@ -63,13 +60,13 @@ export class UserService implements OnModuleInit {
 
   async allNonDeletedUsers(page: number, size: number) {
     return await this.db.query<BBUser>`select * from ${sql(
-      this.table,
+      this.table
     )} where state != 'DELETED' order by email ${paginated(page, size)}`;
   }
 
   async updateUserRoles(bb_userid: BBUser['bb_userid'], roles: string[]) {
     return await this.db.query`update ${sql(
-      this.table,
+      this.table
     )} set roles = ${roles} where bb_userid = ${bb_userid}`;
   }
 
@@ -79,13 +76,11 @@ export class UserService implements OnModuleInit {
   }
 
   async deleteUser(bb_userid: BBUser['bb_userid']) {
-    return await this.db.query`delete from ${sql(
-      this.table,
-    )} where bb_userid = ${bb_userid}`;
+    return await this.db.query`delete from ${sql(this.table)} where bb_userid = ${bb_userid}`;
   }
 
   async findUserByEmail(email: string) {
-    return await this.userTable.findByField("email", email) 
+    return await this.userTable.findByField('email', email);
   }
 
   async findUser(email: string, password: string) {
@@ -102,7 +97,7 @@ export class UserService implements OnModuleInit {
 
   async findUserByRole(role: string, page: number, size: number) {
     return await this.db.query<BBUser>`select * from ${sql(
-      this.table,
+      this.table
     )} where roles ? ${role} ${paginated(page, size)} `;
   }
 
@@ -114,14 +109,14 @@ export class UserService implements OnModuleInit {
   }
 
   async resetUserPassword(bb_userid: BBUser['bb_userid'], password: string) {
-    return await this.db.query`update ${sql(
-      this.table,
-    )} set password = ${this.crypt.hash(password)} where bb_userid = ${bb_userid}`;
+    return await this.db.query`update ${sql(this.table)} set password = ${this.crypt.hash(
+      password
+    )} where bb_userid = ${bb_userid}`;
   }
 
   async findUserById(bb_userid: BBUser['bb_userid']) {
     return await this.db.query<BBUser>`select * from ${sql(
-      this.table,
+      this.table
     )} where bb_userid = ${bb_userid}`;
   }
 
@@ -140,10 +135,10 @@ limit 100
   }
 
   async all(page: number, size: number) {
-    return this.userTable.all(page, size)
+    return this.userTable.all(page, size);
   }
 
   async findByIds(ids: string[]) {
-    return this.userTable.findByIds(ids)
+    return this.userTable.findByIds(ids);
   }
 }
