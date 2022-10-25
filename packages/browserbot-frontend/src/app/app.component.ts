@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { LoadingService } from './shared/services/loading.service';
 import { BLSessionEvent } from '@browserbot/model';
 import { UrlParamsService } from './shared/services/url-params.service';
@@ -20,7 +20,6 @@ export class AppComponent implements OnInit {
 
   async ngOnInit() {
     const sessionPath = this.urlParamsService.get('path');
-
-    this.sessionEvents = await this.sessionService.downloadSession(sessionPath);
+    if (sessionPath) this.sessionEvents = await this.sessionService.downloadSession(sessionPath);
   }
 }
