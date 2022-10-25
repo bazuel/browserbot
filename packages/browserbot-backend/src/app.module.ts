@@ -14,6 +14,7 @@ import { TokenService } from './shared/services/token.service';
 import { StorageService, ConfigService, initGlobalConfig } from '@browserbot/backend-shared';
 import { EventService } from './session/event.service';
 import { EventController } from './session/event.controller';
+import { InjectorService } from './shared/functions/find-injected-service.function';
 const globalConfig = initGlobalConfig();
 
 const configService = new ConfigService(globalConfig);
@@ -22,6 +23,7 @@ const configService = new ConfigService(globalConfig);
   imports: [],
   controllers: [AppController, UserController, SessionController, EventController],
   providers: [
+    InjectorService,
     AppService,
     { provide: ConfigService, useValue: configService },
     { provide: StorageService, useValue: new StorageService(configService) },
