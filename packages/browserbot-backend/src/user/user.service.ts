@@ -5,13 +5,12 @@ import { CrudService } from '../shared/services/crud.service';
 import { BBUser } from '@browserbot/model';
 
 @Injectable()
-export class UserService implements OnModuleInit {
+export class UserService extends CrudService<BBUser> implements OnModuleInit {
   protected table = 'bb_user';
   protected id = 'bb_userid';
-  private userTable: CrudService<BBUser>;
 
-  constructor(private db: PostgresDbService, private crypt: CryptService) {
-    this.userTable = new CrudService<BBUser>(db, this.table, this.id);
+  constructor(db: PostgresDbService, private crypt: CryptService) {
+    super(db);
   }
 
   async onModuleInit() {
@@ -37,7 +36,7 @@ export class UserService implements OnModuleInit {
                 created TIMESTAMPTZ
             );
         `;
-    const users = await this.userTable.all(0, 10);
+    const users = await this.all(0, 10);
     console.log('users: ', users);
     if (users.length == 0)
       await this.createUser({
@@ -56,7 +55,7 @@ export class UserService implements OnModuleInit {
     let { teams, bb_userid, ...u } = user;
     if (!u.password) u.password = 'smith@' + Math.round(Math.random() * 1000);
     else u.password = this.crypt.hash(u.password);
-    return this.userTable.create(u);
+    return this.create(u);
   }
 
   async allNonDeletedUsers(page: number, size: number) {
@@ -73,7 +72,7 @@ export class UserService implements OnModuleInit {
 
   async updateUser(user: BBUser) {
     const { password, teams, ...u } = user;
-    return await this.userTable.update(u);
+    return await this.update(u);
   }
 
   async deleteUser(bb_userid: BBUser['bb_userid']) {
@@ -81,7 +80,7 @@ export class UserService implements OnModuleInit {
   }
 
   async findUserByEmail(email: string) {
-    return await this.userTable.findByField('email', email);
+    return await this.findByField('email', email);
   }
 
   async findUser(email: string, password: string) {
@@ -115,12 +114,6 @@ export class UserService implements OnModuleInit {
     )} where bb_userid = ${bb_userid}`;
   }
 
-  async findUserById(bb_userid: BBUser['bb_userid']) {
-    return await this.db.query<BBUser>`select * from ${sql(
-      this.table
-    )} where bb_userid = ${bb_userid}`;
-  }
-
   async userWithEmailExists(email: string) {
     const result = await this.findUserByEmail(email);
     return result.length > 0;
@@ -133,13 +126,5 @@ or ${like('surname', q)}
 or ${like('email', q)} 
 limit 100
 `;
-  }
-
-  async all(page: number, size: number) {
-    return this.userTable.all(page, size);
-  }
-
-  async findByIds(ids: string[]) {
-    return this.userTable.findByIds(ids);
   }
 }

@@ -82,8 +82,8 @@ export class UserController {
       const user = data.user;
       user.email = user.email.trim().toLowerCase();
       user.password = user.password.trim();
-      const foundUsers = await this.userService.findUserById(data.bb_userid);
-      if (foundUsers.length == 0) throw new HttpException(`Cannot find this user: ${token}`, 404);
+      const foundUser = await this.userService.findById(data.bb_userid);
+      if (!foundUser) throw new HttpException(`Cannot find this user: ${token}`, 404);
       await this.userService.updateUserRoles(data.bb_userid, ['EMAIL_CONFIRMED', 'USER']);
       console.log('user saved into db');
       const loginToken = this.tokenService.generate({
@@ -148,7 +148,7 @@ export class UserController {
   @Get('find')
   @UseGuards(Admin)
   async find(@Query('id') bb_userid: string) {
-    const [user] = await this.userService.findUserById(bb_userid);
+    const user = await this.userService.findById(bb_userid);
     delete user?.password;
     return user;
   }

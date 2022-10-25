@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, OnModuleInit } from '@nestjs/common';
 import { TimeService } from '../time/time.service';
 import { PostgresDbService, sql } from '../shared/services/postgres-db.service';
 import { CrudService } from '../shared/services/crud.service';
@@ -22,17 +22,16 @@ export interface BBEvent {
 }
 
 @Injectable()
-export class EventService {
-  private eventTable: CrudService<BBEvent>;
-  private table = 'bb_event';
-  private id = 'bb_eventid';
+export class EventService extends CrudService<BBEvent> implements OnModuleInit {
+  protected table = 'bb_event';
+  protected id = 'bb_eventid';
 
   constructor(
     private timeService: TimeService,
-    private db: PostgresDbService,
+    db: PostgresDbService,
     private storageService: StorageService
   ) {
-    this.eventTable = new CrudService<BBEvent>(db, this.table, this.id);
+    super(db);
   }
 
   async onModuleInit() {
@@ -69,26 +68,14 @@ export class EventService {
   }
 
   async save(hits: BLSessionEvent[], reference: string) {
-    if (hits.length == 1) await this.eventTable.create(this.handleSize(hits[0], reference));
+    if (hits.length == 1) await this.create(this.handleSize(hits[0], reference));
     else {
       const hitsToSave: BLSessionEvent[] = [];
       hits.forEach((h) => {
         hitsToSave.push(this.handleSize(h, reference));
       });
-      await this.eventTable.bulkCreate(hitsToSave);
+      await this.bulkCreate(hitsToSave);
     }
-  }
-
-  async findByField(field: keyof BBEvent, value: string) {
-    return await this.eventTable.findByField(field, value);
-  }
-
-  async findByFields(fieldsMap) {
-    return await this.eventTable.findByFields(fieldsMap);
-  }
-
-  async findById(id) {
-    return await this.eventTable.findById(id);
   }
 
   async readByPath(path: string) {

@@ -100,6 +100,6 @@ export class SessionController {
 
   @Get('all')
   async getAll(@Res({ passthrough: true }) res, @Query('id') id) {
-    return await this.sessionService.getAll();
+    return await this.sessionService.all(0, 500);
   }
 }

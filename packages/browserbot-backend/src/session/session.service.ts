@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, OnModuleInit } from '@nestjs/common';
 import { StorageService } from '@browserbot/backend-shared';
 import { TimeService } from '../time/time.service';
 import { PostgresDbService, sql } from '../shared/services/postgres-db.service';
@@ -6,17 +6,16 @@ import { CrudService } from '../shared/services/crud.service';
 import { BBSession } from '@browserbot/model';
 
 @Injectable()
-export class SessionService {
-  private sessionTable: CrudService<BBSession>;
-  private table = 'bb_session';
-  private id = 'bb_sessionid';
+export class SessionService extends CrudService<BBSession> implements OnModuleInit {
+  protected table = 'bb_session';
+  protected id = 'bb_sessionid';
 
   constructor(
     private timeService: TimeService,
-    private db: PostgresDbService,
+    db: PostgresDbService,
     private storageService: StorageService
   ) {
-    this.sessionTable = new CrudService<BBSession>(db, this.table, this.id);
+    super(db);
   }
 
   async onModuleInit() {
@@ -40,7 +39,7 @@ export class SessionService {
 
   async saveSession(session: Buffer, url: string) {
     const path = this.path(url);
-    const id = (await this.sessionTable.create({ url, path }))[0].bb_sessionid;
+    const id = (await this.create({ url, path }))[0].bb_sessionid;
     this.storageService.upload(session, path).then(() =>
       fetch(
         'http://localhost:3000/api/events?' +
@@ -65,15 +64,7 @@ export class SessionService {
     return await this.storageService.getStream(path);
   }
 
-  async findById(id: string) {
-    return await this.sessionTable.findById(id);
-  }
-
   async findByPath(path: string) {
-    return await this.sessionTable.findByField('path', path);
-  }
-
-  async getAll() {
-    return await this.sessionTable.all(0, 500);
+    return await this.findByField('path', path);
   }
 }

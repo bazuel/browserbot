@@ -1,7 +1,10 @@
 import { like, paginated, PostgresDbService, sql } from './postgres-db.service';
 
 export class CrudService<T> {
-  constructor(protected db: PostgresDbService, private table: string, private id: string) {}
+  protected table = 'bb_';
+  protected id = 'id';
+
+  constructor(protected db: PostgresDbService) {}
 
   async count() {
     const result = await this.db.query<{
