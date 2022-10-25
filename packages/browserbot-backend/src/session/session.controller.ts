@@ -91,15 +91,15 @@ export class SessionController {
     return await this.getStreamByPath(path, res);
   }
 
+  @Get('all')
+  async getAll(@Res({ passthrough: true }) res, @Query('id') id) {
+    return await this.sessionService.all(0, 500);
+  }
+
   private async getStreamByPath(path, res) {
     const stream = await this.sessionService.sessionStream(path);
     const filename = path.split('/').pop();
     (res as any).header('Content-Disposition', `attachment; filename="${filename}";`);
     return new StreamableFile(stream);
-  }
-
-  @Get('all')
-  async getAll(@Res({ passthrough: true }) res, @Query('id') id) {
-    return await this.sessionService.all(0, 500);
   }
 }

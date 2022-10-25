@@ -63,10 +63,6 @@ export class EventService extends CrudService<BBEvent> implements OnModuleInit {
     await this.db.query`CREATE INDEX if not exists  "bb_event_name" ON "bb_event" ("name");`;
   }
 
-  private jsonSizeKb(json) {
-    return Buffer.byteLength(JSON.stringify(json)) / 1024;
-  }
-
   async save(hits: BLSessionEvent[], reference: string) {
     if (hits.length == 1) await this.create(this.handleSize(hits[0], reference));
     else {
@@ -80,6 +76,10 @@ export class EventService extends CrudService<BBEvent> implements OnModuleInit {
 
   async readByPath(path: string) {
     return await this.storageService.read(path);
+  }
+
+  private jsonSizeKb(json) {
+    return Buffer.byteLength(JSON.stringify(json)) / 1024;
   }
 
   private handleSize(h: BLSessionEvent, reference: string) {

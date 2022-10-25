@@ -44,14 +44,6 @@ export class SessionService extends CrudService<BBSession> implements OnModuleIn
     return { path, id };
   }
 
-  path(url: string) {
-    const u = new URL(url);
-    const path = (u.pathname ?? '/').substring(1).replace(/\//g, '_@bb@_') || '_@bb@_';
-    return `sessions/${u.host}/${path}/${this.timeService.todayAs(
-      'YYYY/MM/DD'
-    )}/${Date.now()}-${Math.round(Math.random() * 1000)}.zip`;
-  }
-
   async sessionStream(path: string) {
     return await this.storageService.getStream(path);
   }
@@ -62,6 +54,14 @@ export class SessionService extends CrudService<BBSession> implements OnModuleIn
 
   async findByPath(path: string) {
     return await this.findByField('path', path);
+  }
+
+  path(url: string) {
+    const u = new URL(url);
+    const path = (u.pathname ?? '/').substring(1).replace(/\//g, '_@bb@_') || '_@bb@_';
+    return `sessions/${u.host}/${path}/${this.timeService.todayAs(
+      'YYYY/MM/DD'
+    )}/${Date.now()}-${Math.round(Math.random() * 1000)}.zip`;
   }
 
   run(path: BBSession['path']) {
