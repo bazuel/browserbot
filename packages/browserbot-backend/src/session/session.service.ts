@@ -40,15 +40,7 @@ export class SessionService extends CrudService<BBSession> implements OnModuleIn
   async saveSession(session: Buffer, url: string) {
     const path = this.path(url);
     const id = (await this.create({ url, path }))[0].bb_sessionid;
-    this.storageService.upload(session, path).then(() =>
-      fetch(
-        'http://localhost:3000/api/events?' +
-          new URLSearchParams({
-            path: path,
-            backend: 'mock'
-          })
-      )
-    );
+    this.storageService.upload(session, path).then(() => this.run(path));
     return { path, id };
   }
 
@@ -64,7 +56,21 @@ export class SessionService extends CrudService<BBSession> implements OnModuleIn
     return await this.storageService.getStream(path);
   }
 
+  async sessionBuffer(path: string) {
+    return await this.storageService.read(path);
+  }
+
   async findByPath(path: string) {
     return await this.findByField('path', path);
+  }
+
+  run(path: BBSession['path']) {
+    fetch(
+      'http://localhost:3000/api/run-events?' +
+        new URLSearchParams({
+          path: path,
+          backend: 'mock'
+        })
+    ).then(() => console.log('running session: ', path));
   }
 }

@@ -1,8 +1,9 @@
-import { Controller, Get, Query, Res, StreamableFile } from '@nestjs/common';
+import { Controller, Get, Query, Res } from '@nestjs/common';
 import { PostgresDbService } from '../shared/services/postgres-db.service';
 import { HasPermission } from '../shared/token.decorator';
 import { SessionService } from './session.service';
-import { EventService } from './event.service';
+import { BBEvent, EventService } from './event.service';
+import { unzipJson } from 'browserbot-common';
 
 @Controller('event')
 export class EventController {
@@ -14,11 +15,19 @@ export class EventController {
 
   @Get('download-session')
   @HasPermission('download')
-  async downloadSession(@Res({ passthrough: true }) res, @Query('path') path) {
-    const stream = await this.sessionService.sessionStream(path);
-    const filename = path.split('/').pop();
-    (res as any).header('Content-Disposition', `attachment; filename="${filename}"`);
-    return new StreamableFile(stream);
+  async downloadSession(@Res({ passthrough: true }) res, @Query() query) {
+    let { path, ...filters } = query;
+    let eventList: BBEvent[] = await this.sessionService
+      .sessionBuffer(path)
+      .then((buffer) => unzipJson(buffer));
+    eventList = eventList.filter((event) => {
+      for (const key in filters) {
+        if (event[key] != filters[key]) return false;
+      }
+      return true;
+    });
+
+    return eventList;
   }
 
   @Get('download-preview')

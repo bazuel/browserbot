@@ -1,14 +1,14 @@
 import { strFromU8, unzip, Unzipped } from 'fflate';
 import fs from 'fs';
 import { Browser, BrowserContext, chromium, Page, selectors } from 'playwright';
-import { ConfigService, StorageService } from '@browserbot/backend-shared';
+import { ConfigService, initGlobalConfig, StorageService } from '@browserbot/backend-shared';
 import { BLEvent, BLWindowResizeEvent } from '@browserbot/monitor/src/events';
 import { BBSessionInfo } from '@browserbot/model';
 import { actionWhitelists, executeAction } from './actions';
 import { MockService } from './mock.service';
 import { log } from './log.service';
 
-const storageService = new StorageService(new ConfigService());
+const storageService = new StorageService(new ConfigService(initGlobalConfig()));
 
 declare global {
   interface Window {
