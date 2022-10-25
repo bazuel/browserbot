@@ -6,14 +6,13 @@ import {
   HttpStatus,
   Post,
   Query,
-  Req,
   UseGuards
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { CryptService } from '../shared/services/crypt.service';
 import { EmailService } from '../shared/services/email.service';
 import { ApiTokenData, TokenService } from '../shared/services/token.service';
-import { Admin, HasToken } from '../shared/token.decorator';
+import { Admin, HasToken, UserId } from '../shared/token.decorator';
 import { BBUser } from '@browserbot/model';
 import { ConfigService, StorageService } from '@browserbot/backend-shared';
 import { MessagesService } from './messages.service';
@@ -177,19 +176,14 @@ export class UserController {
     return users.map((u) => ({ ...u, password: '' }));
   }
 
-  @Post('request-token-api-generation')
+  @Get('request-token-api-generation')
   @UseGuards(HasToken)
-  async generateApiToken(
-    @Req() request: Request,
-    @Body()
-    user: BBUser
-  ) {
-    const domain = new URL(request.url).hostname;
+  async generateApiToken(@UserId() userId: BBUser['bb_userid']) {
     const apiToken = this.tokenService.generate(
-      <Partial<ApiTokenData>>{ user, api: ['all'], domain: domain },
+      <Partial<ApiTokenData>>{ userId, api: ['all'] },
       '1y'
     );
-    await this.userService.updateUser({ ...user, api_token: apiToken });
+    await this.userService.updateUser({ bb_userid: userId, api_token: apiToken });
     return apiToken;
   }
 

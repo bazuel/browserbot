@@ -5,12 +5,11 @@ import {
   HttpException,
   HttpStatus,
   Injectable,
-  SetMetadata
+  UseGuards
 } from '@nestjs/common';
 import { ApiTokenData, BBApiPermission, TokenService } from './services/token.service';
 import { findInjectedService } from './functions/find-injected-service.function';
 import { CryptService } from './services/crypt.service';
-import { Reflector } from '@nestjs/core';
 
 function extractTokenData(request, tokenService: TokenService) {
   const tokenData = tokenService.checkAuthorized<{ tenant: string }>(request);
@@ -45,9 +44,6 @@ export const Token = createParamDecorator((data: unknown, ctx: ExecutionContext)
   return emailAndRoles(ctx);
 });
 
-export const PermissionRequired = (permission: BBApiPermission) =>
-  SetMetadata('permission', permission);
-
 @Injectable()
 export class Admin implements CanActivate {
   canActivate(ctx: ExecutionContext): boolean | Promise<boolean> {
@@ -64,18 +60,18 @@ export class HasToken implements CanActivate {
   }
 }
 
-@Injectable()
-export class HasApiPermission implements CanActivate {
-  constructor(private reflector: Reflector) {}
-  canActivate(context: ExecutionContext): boolean | Promise<boolean> {
-    const permissionRequired = this.reflector.get<BBApiPermission>(
-      'permission',
-      context.getHandler()
-    );
+class HasApiPermission implements CanActivate {
+  constructor(private permission: BBApiPermission) {}
+  async canActivate(context: ExecutionContext): Promise<boolean> {
+    const hasToken = await new HasToken().canActivate(context);
+    if (!hasToken) return false;
     const { api } = extractTokenData(
       context.switchToHttp().getRequest(),
       tokenService
     ) as ApiTokenData;
-    return api.includes('all') || api.includes(permissionRequired);
+    return api.includes('all') || api.includes(this.permission);
   }
 }
+
+export const HasPermission = (permission: BBApiPermission) =>
+  UseGuards(new HasApiPermission(permission));

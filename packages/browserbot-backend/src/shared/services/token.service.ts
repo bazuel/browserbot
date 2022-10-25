@@ -14,7 +14,6 @@ export class TokenData {
 
 export class ApiTokenData extends TokenData {
   api?: BBApiPermission[];
-  domain: string;
 }
 
 export type BBApiPermission = 'all' | 'download' | 'upload' | 'run';

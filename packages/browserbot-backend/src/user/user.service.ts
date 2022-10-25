@@ -70,7 +70,7 @@ export class UserService extends CrudService<BBUser> implements OnModuleInit {
     )} set roles = ${roles} where bb_userid = ${bb_userid}`;
   }
 
-  async updateUser(user: BBUser) {
+  async updateUser(user: Partial<BBUser>) {
     const { password, teams, ...u } = user;
     return await this.update(u);
   }

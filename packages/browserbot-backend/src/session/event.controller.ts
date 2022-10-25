@@ -1,12 +1,10 @@
-import { Controller, Get, Query, Res, StreamableFile, UseGuards } from '@nestjs/common';
+import { Controller, Get, Query, Res, StreamableFile } from '@nestjs/common';
 import { PostgresDbService } from '../shared/services/postgres-db.service';
-import { HasApiPermission, HasToken, PermissionRequired } from '../shared/token.decorator';
+import { HasPermission } from '../shared/token.decorator';
 import { SessionService } from './session.service';
 import { EventService } from './event.service';
 
 @Controller('event')
-@UseGuards(HasToken)
-@UseGuards(HasApiPermission)
 export class EventController {
   constructor(
     private db: PostgresDbService,
@@ -15,7 +13,7 @@ export class EventController {
   ) {}
 
   @Get('download-session')
-  @PermissionRequired('download')
+  @HasPermission('download')
   async downloadSession(@Res({ passthrough: true }) res, @Query('path') path) {
     const stream = await this.sessionService.sessionStream(path);
     const filename = path.split('/').pop();
@@ -24,13 +22,13 @@ export class EventController {
   }
 
   @Get('download-preview')
-  @PermissionRequired('download')
+  @HasPermission('download')
   async downloadPreview(@Query() fieldsMap) {
     await this.eventService.findByFields(fieldsMap);
   }
 
   @Get('download-event-details')
-  @PermissionRequired('download')
+  @HasPermission('download')
   async downloadDetails(@Query('id') id) {
     const event = await this.eventService.findById(id);
     if (Object.keys(event.data).length == 0)
@@ -39,7 +37,7 @@ export class EventController {
   }
 
   @Get('screenshot')
-  @PermissionRequired('download')
+  @HasPermission('download')
   async downloadScreenshot(@Query('path') path) {
     return await this.eventService.readByPath(path);
   }
