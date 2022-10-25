@@ -75,3 +75,6 @@ export type BBVideo = {
 export type BBDomShot = {
   filename: string;
 };
+
+export const BBApiPermission: string[] = ['all', 'download', 'upload', 'run'];
+export type BBApiPermissionType = typeof BBApiPermission[number];

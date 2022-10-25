@@ -1,0 +1,64 @@
+<div class="select text-black" [class.disabled]="disabled" (clickOutside)="show = false">
+  <input
+    [ngModelOptions]="{ standalone: true }"
+    [className]="inputClasses"
+    type="text"
+    [(ngModel)]="query"
+    [class.disabled]="!itemsToShow"
+    [required]="required"
+    #queryInput
+    (ngModelChange)="onQueryChange($event)"
+    [placeholder]="placeholder"
+    autocomplete="new-password"
+    (click)="show = true; setPopupPosition()"
+    (keydown.backspace)="$event.stopPropagation()"
+    (keydown.arrowDown)="next()"
+    (keydown.arrowUp)="prev()"
+    (keydown.enter)="
+      enterOnSelected();
+      $event.stopPropagation();
+      $event.preventDefault();
+      $event.stopImmediatePropagation()
+    "
+    (blur)="checkifEmptyAndEmit(); blur.emit()"
+    (focus)="queryInput.select(); setPopupPosition()" />
+
+  <div [hidden]="!show" class="autocomplete-popup" #popup>
+    <div
+      *ngFor="let i of itemsToShow; let ix = index"
+      class="autocomplete-item {{ menuClasses }}"
+      [class.active]="currentIndex === ix"
+      (mousedown)="
+        $event.preventDefault();
+        $event.stopImmediatePropagation();
+        $event.stopPropagation();
+        onItemClick(i)
+      "
+      [attr.title]="tooltipProperty ? i[tooltipProperty] : null">
+      <span
+        *ngIf="showKeys && keysMapLabel"
+        class="truncate"
+        [innerHtml]="
+          keysMapLabel[property] +
+          ': ' +
+          (i[property] || i | highlight: query) +
+          (secondProperty
+            ? ' - ' +
+              (keysMapLabel[secondProperty] + ': ' + (i[secondProperty] || '' | highlight: query))
+            : '') +
+          (thirdProperty
+            ? ' - ' +
+              (keysMapLabel[thirdProperty] + ': ' + (i[thirdProperty] || '' | highlight: query))
+            : '')
+        "></span>
+      <span
+        *ngIf="!showKeys || !keysMapLabel"
+        class="truncate"
+        [innerHtml]="
+          (i[property] || i | highlight: query) +
+          (secondProperty ? ' - ' + (i[secondProperty] || '' | highlight: query) : '') +
+          (thirdProperty ? ' - ' + (i[thirdProperty] || '' | highlight: query) : '')
+        "></span>
+    </div>
+  </div>
+</div>

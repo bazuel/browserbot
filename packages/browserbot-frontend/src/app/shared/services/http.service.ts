@@ -1,13 +1,14 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
+import { TokenService } from './token.service';
 
 @Injectable({ providedIn: 'root' })
 export class HttpService {
   private rootUrl = environment.api_backend;
   private prefix = '/api';
 
-  constructor(private http: HttpClient) {
+  constructor(private http: HttpClient, private token: TokenService) {
     if (
       window.location.hostname.indexOf('staging') >= 0 ||
       window.location.hostname.indexOf('localhost') >= 0
@@ -71,11 +72,10 @@ export class HttpService {
     });
   }
 
-  getAsBuffer(path: string){
+  getAsBuffer(path: string) {
     return fetch(this.url(path), {
       method: 'GET'
-    })
-      .then((response) => response.arrayBuffer());
+    }).then((response) => response.arrayBuffer());
   }
 
   downloadFile(fullPath: string, filename: string = '') {
@@ -209,6 +209,13 @@ export class HttpService {
 
   private headerOptions(customHeaders: { [h: string]: string } = {}) {
     const headers = { ...customHeaders };
+
+    if (headers['token']) {
+      headers['Authorization'] = 'Bearer ' + headers['token'];
+    }
+
+    const token = this.token.get();
+    if (!headers['Authorization'] && token) headers['Authorization'] = 'Bearer ' + token;
 
     const options = {
       headers: new HttpHeaders(headers),

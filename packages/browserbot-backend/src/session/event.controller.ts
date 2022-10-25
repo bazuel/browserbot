@@ -21,7 +21,7 @@ export class EventController {
 
   @Get('session')
   @HasPermission('download')
-  async downloadSession(@Res({ passthrough: true }) res, @Query() query) {
+  async downloadSession(@Query() query) {
     let { path, ...filters } = query;
     let eventList: BBEvent[] = await this.sessionService
       .sessionBuffer(path)

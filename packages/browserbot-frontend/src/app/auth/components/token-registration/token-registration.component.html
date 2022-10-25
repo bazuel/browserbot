@@ -1,0 +1,11 @@
+<div class="bo-section shadow-2xl">
+
+  <div class="my-2">
+    <bb-logo>Token Registration</bb-logo>
+  </div>
+
+  <bb-autocomplete [items]="permissions" (itemSelected)="permissionSelected = $event"></bb-autocomplete>
+
+  <button class="mx-2" [disabled]="!permissionSelected" (click)="generate()">Generate Token</button>
+  <div>{{token}}</div>
+</div>

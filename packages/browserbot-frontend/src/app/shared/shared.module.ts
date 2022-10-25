@@ -12,6 +12,10 @@ import {
 } from './components/notification/notification.component';
 import { TokenService } from './services/token.service';
 import { CapsLockDirective } from './directives/caps-lock.directive';
+import { AutocompleteComponent } from './components/autocomplete/autocomplete.component';
+import { FormsModule } from '@angular/forms';
+import { ClickOutsideDirective } from './directives/click-outside.directive';
+import { HighlightPipe } from './pipes/highlight.pipe';
 
 @NgModule({
   declarations: [
@@ -19,15 +23,26 @@ import { CapsLockDirective } from './directives/caps-lock.directive';
     PopupComponent,
     NotificationComponent,
     CapsLockDirective,
-    CapsLockDirective
+    CapsLockDirective,
+    AutocompleteComponent,
+    ClickOutsideDirective,
+    HighlightPipe
   ],
-  imports: [CommonModule, HttpClientModule, BrowserbotSharedModule],
+  imports: [CommonModule, HttpClientModule, BrowserbotSharedModule, FormsModule],
   providers: [
     UrlParamsService,
     HttpService,
     TokenService,
     { provide: NotificationService, useValue: new NotificationService() }
   ],
-  exports: [IconComponent, PopupComponent, NotificationComponent, CapsLockDirective]
+  exports: [
+    IconComponent,
+    PopupComponent,
+    NotificationComponent,
+    CapsLockDirective,
+    ClickOutsideDirective,
+    HighlightPipe,
+    AutocompleteComponent
+  ]
 })
 export class SharedModule {}

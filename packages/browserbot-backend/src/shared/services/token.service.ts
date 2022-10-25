@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { BBApiPermissionType } from '@browserbot/model';
 
 const jwt = require('jsonwebtoken');
 
@@ -13,10 +14,8 @@ export class TokenData {
 }
 
 export class ApiTokenData extends TokenData {
-  api?: BBApiPermission[];
+  api?: BBApiPermissionType[];
 }
-
-export type BBApiPermission = 'all' | 'download' | 'upload' | 'run';
 
 export interface GenericRequest {
   headers: { [header: string]: string };

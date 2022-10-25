@@ -13,7 +13,7 @@ import { CryptService } from '../shared/services/crypt.service';
 import { EmailService } from '../shared/services/email.service';
 import { ApiTokenData, TokenService } from '../shared/services/token.service';
 import { Admin, HasToken, UserId } from '../shared/token.decorator';
-import { BBUser } from '@browserbot/model';
+import { BBApiPermissionType, BBUser } from '@browserbot/model';
 import { ConfigService, StorageService } from '@browserbot/backend-shared';
 import { MessagesService } from './messages.service';
 
@@ -178,13 +178,16 @@ export class UserController {
 
   @Get('request-token-api-generation')
   @UseGuards(HasToken)
-  async generateApiToken(@UserId() userId: BBUser['bb_userid']) {
+  async generateApiToken(
+    @UserId() userId: BBUser['bb_userid'],
+    @Query('permission_type') permissionType: BBApiPermissionType
+  ) {
     const apiToken = this.tokenService.generate(
-      <Partial<ApiTokenData>>{ userId, api: ['all'] },
+      <Partial<ApiTokenData>>{ userId, api: [permissionType] },
       '1y'
     );
     await this.userService.updateUser({ bb_userid: userId, api_token: apiToken });
-    return apiToken;
+    return { apiToken };
   }
 
   @Get('get-permissions')
