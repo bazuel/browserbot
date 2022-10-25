@@ -13,7 +13,13 @@ export class EventController {
     private eventService: EventService
   ) {}
 
-  @Get('download-session')
+  @Get()
+  @HasPermission('download')
+  async downloadPreview(@Query() fieldsMap) {
+    await this.eventService.findByFields(fieldsMap);
+  }
+
+  @Get('session')
   @HasPermission('download')
   async downloadSession(@Res({ passthrough: true }) res, @Query() query) {
     let { path, ...filters } = query;
@@ -26,17 +32,10 @@ export class EventController {
       }
       return true;
     });
-
     return eventList;
   }
 
-  @Get('download-preview')
-  @HasPermission('download')
-  async downloadPreview(@Query() fieldsMap) {
-    await this.eventService.findByFields(fieldsMap);
-  }
-
-  @Get('download-event-details')
+  @Get('detailed')
   @HasPermission('download')
   async downloadDetails(@Query('id') id) {
     const event = await this.eventService.findById(id);
@@ -49,5 +48,11 @@ export class EventController {
   @HasPermission('download')
   async downloadScreenshot(@Query('path') path) {
     return await this.eventService.readByPath(path);
+  }
+
+  @Get('run')
+  @HasPermission('run')
+  async run(@Query('path') path: string) {
+    if (path) this.sessionService.run(path);
   }
 }

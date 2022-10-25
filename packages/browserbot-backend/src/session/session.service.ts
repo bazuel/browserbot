@@ -1,5 +1,5 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
-import { StorageService } from '@browserbot/backend-shared';
+import { ConfigService, StorageService } from '@browserbot/backend-shared';
 import { TimeService } from '../time/time.service';
 import { PostgresDbService, sql } from '../shared/services/postgres-db.service';
 import { CrudService } from '../shared/services/crud.service';
@@ -13,7 +13,8 @@ export class SessionService extends CrudService<BBSession> implements OnModuleIn
   constructor(
     private timeService: TimeService,
     db: PostgresDbService,
-    private storageService: StorageService
+    private storageService: StorageService,
+    private configService: ConfigService
   ) {
     super(db);
   }
@@ -65,12 +66,12 @@ export class SessionService extends CrudService<BBSession> implements OnModuleIn
   }
 
   run(path: BBSession['path']) {
-    fetch(
-      'http://localhost:3000/api/run-events?' +
-        new URLSearchParams({
-          path: path,
-          backend: 'mock'
-        })
-    ).then(() => console.log('running session: ', path));
+    const urlParams = new URLSearchParams({
+      path: path,
+      backend: 'mock'
+    });
+    fetch(`${this.configService.runner_url}/api/run-events?${urlParams}`).then(() =>
+      console.log('running session: ', path)
+    );
   }
 }
