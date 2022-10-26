@@ -1,10 +1,10 @@
-
+<div class="flex flex-row">
 <bb-sidebar *ngIf="tokenService.logged"></bb-sidebar>
 
 <div>
 <router-outlet></router-outlet>
 </div>
-
+</div>
 <bo-notification></bo-notification>
 <div class="bo-loading-full-screen" *ngIf="loadingService.isLoading()"></div>
 

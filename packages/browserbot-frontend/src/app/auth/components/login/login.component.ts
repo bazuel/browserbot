@@ -72,7 +72,7 @@ export class LoginComponent implements OnInit {
     }
   }
 
-  async redirectToSignIn() {
-    await this.router.navigateByUrl('/registration');
+  async redirectToSignUp() {
+    await this.router.navigateByUrl('/auth/registration');
   }
 }
