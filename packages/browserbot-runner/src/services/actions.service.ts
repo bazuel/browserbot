@@ -11,7 +11,7 @@ import {
   BLWindowResizeEvent
 } from '@browserbot/monitor/src/events';
 import { BBEventWithSerializedTarget } from '@browserbot/model';
-import { locatorFromTarget } from './target-matcher';
+import { locatorFromTarget } from '../functions/target-matcher';
 import { log } from './log.service';
 
 export const actionWhitelists: { [k: string]: BLEventName[] } = {

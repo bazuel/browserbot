@@ -18,3 +18,4 @@ export { DomMonitor } from './dom/dom.monitor';
 export { CssMonitor } from './dom/css.monitor';
 export { MediaMonitor } from './dom/media.monitor';
 export { ForceWebComponentsSerializationPatch } from './dom/force-web-components-serialization.patch';
+export { SessionMonitor } from './session.monitor';

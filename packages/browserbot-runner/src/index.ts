@@ -1,6 +1,6 @@
 import Fastify, { FastifyInstance } from 'fastify';
 import { Runner } from './runner';
-import { log } from './log.service';
+import { log } from './services/log.service';
 
 require('dotenv').config();
 

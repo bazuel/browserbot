@@ -6,10 +6,14 @@
   "dependencies": {
   },
   "scripts": {
-    "build": "tsc",
-    "build:watch": "tsc -w"
+    "tsbuild": "tsc",
+    "tsbuild:watch": "tsc -w",
+    "build": "node esbuild.js ",
+    "build:watch": "node esbuild.js -w",
+    "types": "tsc --emitDeclarationOnly --outDir dist"
   },
   "devDependencies": {
-    "typescript": "^4.7.2"
+    "typescript": "^4.7.2",
+    "esbuild": "^0.15.10"
   }
 }

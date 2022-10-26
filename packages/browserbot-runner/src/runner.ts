@@ -4,9 +4,10 @@ import { Browser, BrowserContext, chromium, Page, selectors } from 'playwright';
 import { ConfigService, initGlobalConfig, StorageService } from '@browserbot/backend-shared';
 import { BLEvent, BLWindowResizeEvent } from '@browserbot/monitor/src/events';
 import { BBSessionInfo } from '@browserbot/model';
-import { actionWhitelists, executeAction } from './actions';
-import { MockService } from './mock.service';
-import { log } from './log.service';
+import { actionWhitelists, executeAction } from './services/actions.service';
+import { MockService } from './services/mock.service';
+import { log } from './services/log.service';
+import { injectScript } from './functions/embedder';
 
 const storageService = new StorageService(new ConfigService(initGlobalConfig()));
 
@@ -21,7 +22,6 @@ export class Runner {
   page: Page;
   viewport: { width: number; height: number };
   useragent: string;
-  serializerScript: string;
   private lastAction: BLEvent;
   private nextAction: BLEvent;
   private takeAction: boolean;
@@ -33,14 +33,17 @@ export class Runner {
     domShots: []
   };
   private filename: string;
-  private VIDEODIR = 'videos/';
+  private VIDEO_DIR = 'videos/';
   context: BrowserContext;
   private mockService: MockService;
   backendType: 'mock' | 'full';
   private sessionType: 'video' | 'screenshot' | 'dom';
+  private readonly serializerScript: string;
+  private readonly monitorScript: string;
 
   constructor() {
     this.serializerScript = fs.readFileSync('./scripts/index.serializer.js', 'utf8');
+    this.monitorScript = fs.readFileSync('./scripts/monitor.utils.js', 'utf8');
     this.useragent =
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.88 Safari/537.36';
     this.viewport = { width: 1280, height: 619 };
@@ -53,9 +56,9 @@ export class Runner {
     const actionsZip = await storageService.read(path);
     log('runner.ts: run: unzip');
     unzip(new Uint8Array(actionsZip), async (err, data) => {
-      await this.runSession(data, 'video').catch((e) => log(e));
+      //await this.runSession(data, 'video').catch((e) => log(e));
       //await this.runSession(data, 'screenshot').catch((e) => log(e));
-      //await this.runSession(data, 'dom').catch((e) => log(e));
+      await this.runSession(data, 'dom').catch((e) => log(e));
       log('runner.ts: run: jsonUpload');
       await this.uploadInfoJson();
       log('session ended gracefully');
@@ -82,7 +85,8 @@ export class Runner {
     this.context = await this.setupContext(jsonEvents);
     if (this.backendType == 'mock') jsonEvents = await this.setupMock(jsonEvents);
     jsonEvents = await this.setupPage(jsonEvents);
-    await this.injectSerializerScript();
+    await injectScript(this.serializerScript);
+    await injectScript(this.monitorScript);
     if (this.page.url().includes('www.google.com/search?q='))
       await this.page.locator('button:has-text("Accetta tutto")').click();
     //TODO pezza
@@ -141,7 +145,7 @@ export class Runner {
       return await this.browser.newContext({
         viewport: this.viewport,
         userAgent: this.useragent,
-        recordVideo: this.sessionType ? { dir: this.VIDEODIR, size: this.viewport } : undefined
+        recordVideo: this.sessionType ? { dir: this.VIDEO_DIR, size: this.viewport } : undefined
       });
     else
       return await this.browser.newContext({
@@ -249,13 +253,5 @@ export class Runner {
       }
     });
     await selectors.register('position', createPositionEngine);
-  }
-
-  private async injectSerializerScript() {
-    await this.page.evaluate((serializerScript) => {
-      const s = document.createElement('script');
-      s.textContent = serializerScript;
-      document.head.appendChild(s);
-    }, this.serializerScript);
   }
 }
