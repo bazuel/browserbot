@@ -1,0 +1,24 @@
+<div class="sidebar">
+  <bb-logo>Dashboard</bb-logo>
+
+  <ul>
+    <li>
+      <a routerLink="/dashboard/home">
+        <bb-icon class="text-gray-400 bg-gray-400" name="crawl"></bb-icon>
+        Dashboard
+      </a>
+    </li>
+    <li>
+      <a routerLink="/auth/token-registration">
+        <bb-icon name="key"></bb-icon>
+        Token Registration
+      </a>
+    </li>
+  </ul>
+
+  <div class="mt-auto">
+    <div class="flex items-center bg-white p-4">
+      <div class="ml-auto text-gray-500" (click)="logout()">logout</div>
+    </div>
+  </div>
+</div>

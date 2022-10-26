@@ -7,18 +7,19 @@ import { SharedModule } from '../shared/shared.module';
 import { BrowserbotSharedModule } from '../browserbot-shared/browserbot-shared.module';
 import { RegistrationComponent } from './components/registration/registration.component';
 import { TokenRegistrationComponent } from './components/token-registration/token-registration.component';
+import { IsLogged } from '../shared/services/is-logged.guard';
 
-const routes: Routes = [
+const authRoutes: Routes = [
   { path: 'login', component: LoginComponent },
   { path: 'registration', component: RegistrationComponent },
-  { path: 'token-registration', component: TokenRegistrationComponent }
+  { path: 'token-registration', component: TokenRegistrationComponent, canActivate: [IsLogged] }
 ];
 
 @NgModule({
   declarations: [LoginComponent, RegistrationComponent, TokenRegistrationComponent],
   imports: [
     CommonModule,
-    RouterModule.forChild(routes),
+    RouterModule.forChild(authRoutes),
     FormsModule,
     SharedModule,
     BrowserbotSharedModule

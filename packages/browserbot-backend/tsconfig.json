@@ -1,4 +1,5 @@
 {
+  "exclude": ["@browserbot/model/dist"],
   "compilerOptions": {
     "module": "commonjs",
     "declaration": true,

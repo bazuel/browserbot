@@ -1,0 +1,18 @@
+.sidebar {
+  @apply flex flex-col bg-gradient-to-br from-bb-100 to-bb-50 w-8 md:w-64 transition-all h-screen overflow-hidden;
+  ul {
+    @apply list-none m-0 p-0;
+  }
+  li {
+    @apply h-10 leading-10 w-full m-0 px-2 hover:bg-bb-200 cursor-pointer;
+    &.active {
+      @apply bg-white hover:bg-bb-200
+    }
+    bb-icon {
+      @apply mr-2
+    }
+    a {
+      @apply no-underline uppercase
+    }
+  }
+}

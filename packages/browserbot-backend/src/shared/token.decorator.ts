@@ -7,9 +7,10 @@ import {
   Injectable,
   UseGuards
 } from '@nestjs/common';
-import { ApiTokenData, BBApiPermission, TokenService } from './services/token.service';
+import { ApiTokenData, TokenService } from './services/token.service';
 import { findInjectedService } from './functions/find-injected-service.function';
 import { CryptService } from './services/crypt.service';
+import { BBApiPermissionType } from '@browserbot/model';
 
 function extractTokenData(request, tokenService: TokenService) {
   const tokenData = tokenService.checkAuthorized<{ tenant: string }>(request);
@@ -61,7 +62,7 @@ export class HasToken implements CanActivate {
 }
 
 class HasApiPermission implements CanActivate {
-  constructor(private permission: BBApiPermission) {}
+  constructor(private permission: BBApiPermissionType) {}
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const hasToken = await new HasToken().canActivate(context);
     if (!hasToken) return false;
@@ -73,5 +74,5 @@ class HasApiPermission implements CanActivate {
   }
 }
 
-export const HasPermission = (permission: BBApiPermission) =>
+export const HasPermission = (permission: BBApiPermissionType) =>
   UseGuards(new HasApiPermission(permission));

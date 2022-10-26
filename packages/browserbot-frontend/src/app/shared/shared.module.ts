@@ -4,7 +4,6 @@ import { UrlParamsService } from './services/url-params.service';
 import { HttpService } from './services/http.service';
 import { HttpClientModule } from '@angular/common/http';
 import { BrowserbotSharedModule } from '../browserbot-shared/browserbot-shared.module';
-import { IconComponent } from './components/icon/icon.component';
 import { PopupComponent } from './components/popup/popup.component';
 import {
   NotificationComponent,
@@ -16,10 +15,10 @@ import { AutocompleteComponent } from './components/autocomplete/autocomplete.co
 import { FormsModule } from '@angular/forms';
 import { ClickOutsideDirective } from './directives/click-outside.directive';
 import { HighlightPipe } from './pipes/highlight.pipe';
+import { IsLogged } from './services/is-logged.guard';
 
 @NgModule({
   declarations: [
-    IconComponent,
     PopupComponent,
     NotificationComponent,
     CapsLockDirective,
@@ -33,10 +32,10 @@ import { HighlightPipe } from './pipes/highlight.pipe';
     UrlParamsService,
     HttpService,
     TokenService,
+    IsLogged,
     { provide: NotificationService, useValue: new NotificationService() }
   ],
   exports: [
-    IconComponent,
     PopupComponent,
     NotificationComponent,
     CapsLockDirective,
