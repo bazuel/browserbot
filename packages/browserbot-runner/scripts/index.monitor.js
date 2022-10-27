@@ -262,66 +262,6 @@ var CookieMonitor = class {
   }
 };
 
-// src/device.serializer.ts
-var DeviceSerializer = class {
-  serialize() {
-    const userAgent = navigator.userAgent;
-    const screen = JSON.parse(JSON.stringify(window.screen, ["availHeight", "availWidth", "colorDepth", "height", "width", "pixelDepth"]));
-    try {
-      screen.orientation = window.screen.orientation.type + " " + window.screen.orientation.angle;
-    } catch (e) {
-    }
-    const dpi = window.devicePixelRatio;
-    const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    const timeZoneOffset = new Date().getTimezoneOffset();
-    const language = navigator.language;
-    const platform = navigator.platform;
-    const vendor = navigator.vendor;
-    const cpuCores = navigator.hardwareConcurrency;
-    const gpu = this.gpuInfo();
-    let info = {
-      userAgent,
-      screen,
-      dpi,
-      timeZone,
-      timeZoneOffset,
-      language,
-      platform,
-      vendor,
-      cpuCores,
-      gpu
-    };
-    return info;
-  }
-  gpuInfo() {
-    try {
-      let w = window;
-      const performance = w.performance || w.mozPerformance || w.msPerformance || w.webkitPerformance || {};
-      const canvas = document.createElement("canvas");
-      const gl = canvas.getContext("experimental-webgl");
-      const renderer = gl.getParameter(gl.RENDERER);
-      const vendor = gl.getParameter(gl.VENDOR);
-      const getUnmaskedInfo = (gl2) => {
-        var unMaskedInfo = {
-          renderer: "",
-          vendor: ""
-        };
-        var dbgRenderInfo = gl2.getExtension("WEBGL_debug_renderer_info");
-        if (dbgRenderInfo != null) {
-          unMaskedInfo.renderer = gl2.getParameter(dbgRenderInfo.UNMASKED_RENDERER_WEBGL);
-          unMaskedInfo.vendor = gl2.getParameter(dbgRenderInfo.UNMASKED_VENDOR_WEBGL);
-        }
-        return unMaskedInfo;
-      };
-      const vendor2 = getUnmaskedInfo(gl).vendor;
-      const renderer2 = getUnmaskedInfo(gl).renderer;
-      return { performance, renderer, renderer2, vendor, vendor2 };
-    } catch (e) {
-      return {};
-    }
-  }
-};
-
 // src/raf-timer.util.ts
 var RequestAnimationFrameTimer = class {
   reqAniFrameId = 0;
@@ -497,156 +437,6 @@ var KeyboardMonitor = class {
     this.disableMonitoring();
   }
 };
-
-// src/selector-finder.util.ts
-var ElementSelectorFinder = class {
-  findUniqueSelector(element) {
-    if (!element)
-      throw new Error("Element input is mandatory");
-    if (!element.ownerDocument)
-      throw new Error("Element should be part of a document");
-    let selector3 = flatSelector(element) + nthChild(element);
-    let foundElements = element.ownerDocument.querySelectorAll(selector3);
-    while (foundElements.length > 1 && element.parentElement) {
-      element = element.parentElement;
-      let parentSelector = flatSelector(element) + nthChild(element);
-      selector3 = `${parentSelector} > ${selector3}`;
-      foundElements = element.ownerDocument.querySelectorAll(selector3);
-    }
-    return selector3;
-  }
-};
-function nthChild(element) {
-  let nthSelector = "";
-  const parent = element.parentNode;
-  if (parent) {
-    let elementSelector = flatSelector(element);
-    let children = Array.from(parent.children);
-    const brothersHavingSameSelectorCount = children.map((c) => flatSelector(c)).filter((s) => s == elementSelector);
-    if (brothersHavingSameSelectorCount.length > 1) {
-      let elementChildIndex = Array.from(parent.children).indexOf(element) + 1;
-      nthSelector = `:nth-child(${elementChildIndex})`;
-    }
-  }
-  return nthSelector;
-}
-function attributes(element, attributesWhiteList = ["name", " value", "title", "for", "type"]) {
-  const attributesSelector = [];
-  const { attributes: attributes2 } = element;
-  for (let a of Array.from(attributes2)) {
-    if (attributesWhiteList.indexOf(a.nodeName.toLowerCase()) > -1) {
-      attributesSelector.push(`[${a.nodeName.toLowerCase()}${a.value ? `="${a.value}"` : ""}]`);
-    }
-  }
-  return attributesSelector.join("");
-}
-function flatSelector(element) {
-  return tag(element) + id(element) + attributes(element) + classes(element);
-}
-function classes(element) {
-  let classSelectorList = [];
-  if (element.hasAttribute("class")) {
-    try {
-      const classList = Array.from(element.classList);
-      classSelectorList = classList.filter(
-        (item) => !/^[a-z_-][a-z\d_-]*$/i.test(item) ? null : item
-      );
-    } catch (e) {
-      let className = element.getAttribute("class") ?? "";
-      className = className.trim().replace(/\s+/g, " ");
-      classSelectorList = className.split(" ");
-    }
-  }
-  return classSelectorList.map((c) => "." + c).join("");
-}
-function id(element) {
-  const id2 = element.getAttribute("id");
-  if (id2 !== null && id2 !== "") {
-    return id2.match(/(?:^\d|:)/) ? `[id="${id2}"]` : "#" + id2;
-  }
-  return "";
-}
-function tag(element) {
-  return element.tagName.toLowerCase().replace(/:/g, "\\:");
-}
-
-// src/move-events.converter.ts
-var selector = (e) => new ElementSelectorFinder().findUniqueSelector(e);
-function combineMoveEvents(events2) {
-  let moves = blevent.list("mousemove", "touchmove");
-  let nonMoveEvents = events2.filter((e) => moves.indexOf(e.name) < 0);
-  let moveEvents = events2.filter((e) => moves.indexOf(e.name) >= 0);
-  let moveEventsTargetMap = /* @__PURE__ */ new Map();
-  for (let e of moveEvents) {
-    let me = e;
-    let target = selector(me.target);
-    if (!moveEventsTargetMap.has(target))
-      moveEventsTargetMap.set(target, { events: [] });
-    moveEventsTargetMap.get(target).events.push(me);
-  }
-  let newMoveEvents = [];
-  moveEventsTargetMap.forEach((data, t) => {
-    let first = data.events[0];
-    let ble = first;
-    let prev = first;
-    let moves2 = data.events.slice(1).map((e) => {
-      let ev = {
-        x: e.x - prev.x,
-        y: e.y - prev.y,
-        at: e.timestamp - prev.timestamp
-      };
-      prev = e;
-      return ev;
-    });
-    newMoveEvents.push({
-      url: ble.url,
-      sid: ble.sid,
-      tab: ble.tab,
-      target: first.target,
-      name: first.name,
-      timestamp: first.timestamp,
-      type: first.type,
-      moves: moves2,
-      x: first.x,
-      y: first.y
-    });
-  });
-  let newEvents = [...nonMoveEvents, ...newMoveEvents];
-  return newEvents;
-}
-function restoreMoveEvent(event) {
-  let events2 = [];
-  let ti = event;
-  let first = {
-    url: ti.url,
-    sid: ti.sid,
-    tab: ti.tab,
-    name: event.name,
-    type: event.type,
-    timestamp: event.timestamp,
-    target: event.target,
-    x: event.x,
-    y: event.y
-  };
-  let prev = first;
-  events2.push(first);
-  for (let e of event.moves) {
-    let next = {
-      url: ti.url,
-      sid: ti.sid,
-      tab: ti.tab,
-      name: event.name,
-      type: event.type,
-      timestamp: prev.timestamp + e.at,
-      target: event.target,
-      x: prev.x + e.x,
-      y: prev.y + e.y
-    };
-    events2.push(next);
-    prev = next;
-  }
-  return events2;
-}
 
 // src/method.observer.ts
 function observeMethod(target, method, newMethod) {
@@ -855,6 +645,78 @@ var WindowResizeMonitor = class {
     this.disableMonitoring();
   }
 };
+
+// src/selector-finder.util.ts
+var ElementSelectorFinder = class {
+  findUniqueSelector(element) {
+    if (!element)
+      throw new Error("Element input is mandatory");
+    if (!element.ownerDocument)
+      throw new Error("Element should be part of a document");
+    let selector2 = flatSelector(element) + nthChild(element);
+    let foundElements = element.ownerDocument.querySelectorAll(selector2);
+    while (foundElements.length > 1 && element.parentElement) {
+      element = element.parentElement;
+      let parentSelector = flatSelector(element) + nthChild(element);
+      selector2 = `${parentSelector} > ${selector2}`;
+      foundElements = element.ownerDocument.querySelectorAll(selector2);
+    }
+    return selector2;
+  }
+};
+function nthChild(element) {
+  let nthSelector = "";
+  const parent = element.parentNode;
+  if (parent) {
+    let elementSelector = flatSelector(element);
+    let children = Array.from(parent.children);
+    const brothersHavingSameSelectorCount = children.map((c) => flatSelector(c)).filter((s) => s == elementSelector);
+    if (brothersHavingSameSelectorCount.length > 1) {
+      let elementChildIndex = Array.from(parent.children).indexOf(element) + 1;
+      nthSelector = `:nth-child(${elementChildIndex})`;
+    }
+  }
+  return nthSelector;
+}
+function attributes(element, attributesWhiteList = ["name", " value", "title", "for", "type"]) {
+  const attributesSelector = [];
+  const { attributes: attributes2 } = element;
+  for (let a of Array.from(attributes2)) {
+    if (attributesWhiteList.indexOf(a.nodeName.toLowerCase()) > -1) {
+      attributesSelector.push(`[${a.nodeName.toLowerCase()}${a.value ? `="${a.value}"` : ""}]`);
+    }
+  }
+  return attributesSelector.join("");
+}
+function flatSelector(element) {
+  return tag(element) + id(element) + attributes(element) + classes(element);
+}
+function classes(element) {
+  let classSelectorList = [];
+  if (element.hasAttribute("class")) {
+    try {
+      const classList = Array.from(element.classList);
+      classSelectorList = classList.filter(
+        (item) => !/^[a-z_-][a-z\d_-]*$/i.test(item) ? null : item
+      );
+    } catch (e) {
+      let className = element.getAttribute("class") ?? "";
+      className = className.trim().replace(/\s+/g, " ");
+      classSelectorList = className.split(" ");
+    }
+  }
+  return classSelectorList.map((c) => "." + c).join("");
+}
+function id(element) {
+  const id2 = element.getAttribute("id");
+  if (id2 !== null && id2 !== "") {
+    return id2.match(/(?:^\d|:)/) ? `[id="${id2}"]` : "#" + id2;
+  }
+  return "";
+}
+function tag(element) {
+  return element.tagName.toLowerCase().replace(/:/g, "\\:");
+}
 
 // src/fetch.hook.ts
 function buildFetchHook() {
@@ -1905,7 +1767,7 @@ var ForceWebComponentsSerializationPatch = class {
 // src/session.monitor.ts
 var state = { sendTo: () => {
 } };
-var selector2 = (e) => {
+var selector = (e) => {
   try {
     return new ElementSelectorFinder().findUniqueSelector(e);
   } catch {
@@ -1913,8 +1775,8 @@ var selector2 = (e) => {
   }
 };
 function targetToSelectors(e) {
-  const targetSelector = e.target ? selector2(e.target) : "";
-  const currentTargetSelector = e.currentTarget ? selector2(e.currentTarget) : "";
+  const targetSelector = e.target ? selector(e.target) : "";
+  const currentTargetSelector = e.currentTarget ? selector(e.currentTarget) : "";
   const { target, currentTarget, ...evt } = e;
   return { ...evt, targetSelector, currentTargetSelector };
 }
@@ -2026,27 +1888,7 @@ var SessionMonitor = class {
   }
 };
 export {
-  CookieMonitor,
-  CssMonitor,
-  DeviceSerializer,
-  DomMonitor,
-  ElementSelectorFinder,
-  ForceWebComponentsSerializationPatch,
-  HttpMonitor,
-  InputMonitor,
-  InputValueMonitor,
-  KeyboardMonitor,
-  MediaMonitor,
-  MouseMonitor,
-  PageMonitor,
-  ScrollMonitor,
   SessionMonitor,
-  StorageMonitor,
-  WindowResizeMonitor,
-  blevent,
-  combineMoveEvents,
-  getElementAttributes,
-  getElementRect,
-  restoreMoveEvent
+  targetToSelectors
 };
-//# sourceMappingURL=index.js.map
+//# sourceMappingURL=session.monitor.js.map

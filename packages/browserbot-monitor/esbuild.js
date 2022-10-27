@@ -6,7 +6,7 @@ function getBuildOptions(more = {}) {
   const options = {
     color: true,
     logLevel: 'error',
-    entryPoints: ['src/index.ts'],
+    entryPoints: ['src/index.ts', 'src/session.monitor.ts'],
     tsconfig: './tsconfig.json',
     bundle: true,
     sourcemap: true
@@ -27,7 +27,7 @@ function build(options) {
 }
 
 build({
-  outfile: 'dist/index.js',
+  outdir: 'dist/',
   format: 'esm',
   target: ['esnext']
 });
