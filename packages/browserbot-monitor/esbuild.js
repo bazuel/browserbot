@@ -6,7 +6,6 @@ function getBuildOptions(more = {}) {
   const options = {
     color: true,
     logLevel: 'error',
-    entryPoints: ['src/index.ts', 'src/session.monitor.ts'],
     tsconfig: './tsconfig.json',
     bundle: true,
     sourcemap: true
@@ -27,7 +26,16 @@ function build(options) {
 }
 
 build({
+  entryPoints: ['src/index.ts'],
   outdir: 'dist/',
   format: 'esm',
+  target: ['esnext']
+});
+
+build({
+  entryPoints: ['src/session.monitor.ts'],
+  globalName: 'browserbot',
+  outdir: 'dist/',
+  format: 'iife',
   target: ['esnext']
 });

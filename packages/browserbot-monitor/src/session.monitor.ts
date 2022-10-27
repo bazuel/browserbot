@@ -27,7 +27,7 @@ const selector = (e) => {
   }
 };
 
-export function targetToSelectors(e: BLEventWithTarget) {
+function targetToSelectors(e: BLEventWithTarget) {
   // used only for document element (scroll event)
   const targetSelector = e.target ? selector(e.target) : ''; //it's a selector. a string
   const currentTargetSelector = e.currentTarget ? selector(e.currentTarget) : ''; //it's a selector. a string

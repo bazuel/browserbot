@@ -10,10 +10,11 @@ export declare global {
     getSid: () => Promise<number>;
     getTab: () => Promise<{ id: number; url: string }>;
     bb_monitorInstance: SessionMonitor;
-    SessionMonitor: SessionMonitor;
+    browserbot: { SessionMonitor: SessionMonitor };
     bb_tabId: number;
     bb_events: BLSessionEvent[];
     pushElements: () => Promise<BLEvent[]>;
+    sendTo: (event: BLEvent | BLSessionEvent) => Promise<void>;
   }
 }
 
