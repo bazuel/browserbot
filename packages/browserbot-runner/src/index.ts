@@ -1,6 +1,7 @@
 import Fastify, { FastifyInstance } from 'fastify';
 import { Runner } from './runner';
 import { log } from './services/log.service';
+import { ConfigService, initGlobalConfig, StorageService } from '@browserbot/backend-shared';
 
 require('dotenv').config();
 
@@ -12,11 +13,12 @@ process.on('uncaughtException', function (err) {
 });
 
 const server: FastifyInstance = Fastify({});
-const runner = new Runner();
+const runner = new Runner(new StorageService(new ConfigService(initGlobalConfig())));
+
 const status: any = { params: {} };
-server.get('/api/events', async (request, reply) => {
+
+server.get('/api/events', (request, reply) => {
   const params: { path?: string; backend?: 'mock' | 'full' } = request.query;
-  status.params = { ...params };
   if (params.path && params.backend)
     runner
       .run(params.path, params.backend)

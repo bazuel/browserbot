@@ -2,16 +2,6 @@ import { BrowserContext } from 'playwright';
 import { BLEvent } from '@browserbot/monitor';
 import { BLCookieDetailsEvent, BLStorageEvent } from '@browserbot/monitor/src/events';
 
-declare global {
-  interface Window {
-    blSerializer: any;
-    controlMock: () => Promise<{ date: boolean; storage: boolean }>;
-    setMockDateTrue: () => void;
-    setMockStorageTrue: () => void;
-    getActualMockedTimestamp: () => Promise<number>;
-  }
-}
-
 export class MockService {
   private context: BrowserContext;
   private mockedState: { date: boolean; storage: boolean };
@@ -21,11 +11,23 @@ export class MockService {
     localStorage?: { [k: string]: string };
     sessionStorage?: { [k: string]: string };
   };
+  private jsonEvents: BLEvent[];
 
-  constructor(context: BrowserContext) {
+  constructor(context: BrowserContext, jsonEvents: BLEvent[]) {
+    this.jsonEvents = jsonEvents;
     this.context = context;
     this.mockedState = { date: false, storage: false };
     this.mockData = {};
+  }
+
+  async setupMock() {
+    await this.setupMockCookie(this.jsonEvents);
+    this.actualTimestamp = this.jsonEvents[0].timestamp;
+    await this.exposeFunctions();
+    this.jsonEvents = await this.mockStorage(this.jsonEvents);
+    await this.mockDate();
+    await this.mockRoutes(this.jsonEvents);
+    return this.jsonEvents;
   }
 
   async mockStorage(jsonEvents: BLEvent[]) {
