@@ -7,7 +7,7 @@ export const newTab = () => {
   tabId += 1;
 };
 
-export async function collectEvents(blEvent: BLEvent | BLSessionEvent) {
+export async function collectEvents(blEvent: BLSessionEvent) {
   const tab = { id: tabId, url: this.page.url() };
   const documentTitle = await this.page.title();
   const url = tab?.url ?? '';

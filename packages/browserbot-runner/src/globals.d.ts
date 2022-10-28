@@ -1,4 +1,4 @@
-import { BLEvent, BLSessionEvent } from '@browserbot/model';
+import { BLSessionEvent } from '@browserbot/model';
 
 export declare global {
   interface Window {
@@ -9,13 +9,13 @@ export declare global {
     getActualMockedTimestamp: () => Promise<number>;
     bb_monitorInstance: SessionMonitor;
     browserbot: { SessionMonitor: SessionMonitor };
-    sendTo: (event: BLEvent | BLSessionEvent) => Promise<void>;
+    sendTo: (event: BLSessionEvent) => Promise<void>;
     createNewMonitor: () => {};
   }
 }
 
 export interface SessionMonitor {
-  new (sendTo: (event: BLEvent | BLSessionEvent) => Promise<void>);
+  new (sendTo: (event: BLSessionEvent) => Promise<void>);
   enable: () => {};
   disable: () => {};
 }

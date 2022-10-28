@@ -2,13 +2,12 @@ import { strFromU8, unzip, Unzipped } from 'fflate';
 import fs from 'fs';
 import { Browser, BrowserContext, chromium, Page } from 'playwright';
 import { StorageService } from '@browserbot/backend-shared';
-import { BLEvent, BLWindowResizeEvent } from '@browserbot/monitor/src/events';
-import { BBSessionInfo, BLSessionEvent } from '@browserbot/model';
+import { BBSessionInfo, BLSessionEvent, BLWindowResizeEvent, BLEvent } from '@browserbot/model';
 import { actionWhitelists, executeAction } from './services/actions.service';
 import { MockService } from './services/mock.service';
 import { log } from './services/log.service';
 import { addPositionSelector } from './functions/selector-register';
-import { newTab, collectEvents, addBBObjectsToWindow } from './functions/monitor';
+import { addBBObjectsToWindow, collectEvents, newTab } from './functions/monitor';
 import { uploadEvents } from './services/uploader.service';
 
 export class Runner {
@@ -31,7 +30,7 @@ export class Runner {
   backendType: 'mock' | 'full';
   private sessionType: 'normal' | 'monitoring';
   private readonly monitorScript: string;
-  bbEvents: (BLEvent | BLSessionEvent)[];
+  bbEvents: BLSessionEvent[];
 
   constructor(private storageService: StorageService) {
     this.monitorScript = fs.readFileSync('./scripts/index.monitor.js', 'utf8');
@@ -161,9 +160,10 @@ export class Runner {
   }
 
   private async setupMonitor() {
-    await this.context.exposeFunction('sendTo', async (event: BLEvent | BLSessionEvent) => {
-      await collectEvents.apply(this, [event]);
-    });
+    await this.context.exposeFunction(
+      'sendTo',
+      async (event: BLSessionEvent) => await collectEvents.apply(this, [event])
+    );
     await this.context.exposeFunction(
       'createNewMonitor',
       async () => await addBBObjectsToWindow(this.page, this.monitorScript)
