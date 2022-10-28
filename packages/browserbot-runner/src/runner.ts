@@ -3,13 +3,13 @@ import fs from 'fs';
 import { Browser, BrowserContext, chromium, Page } from 'playwright';
 import { StorageService } from '@browserbot/backend-shared';
 import { BLEvent, BLWindowResizeEvent } from '@browserbot/monitor/src/events';
-import { BBSessionInfo } from '@browserbot/model';
+import { BBSessionInfo, BLSessionEvent } from '@browserbot/model';
 import { actionWhitelists, executeAction } from './services/actions.service';
 import { MockService } from './services/mock.service';
 import { log } from './services/log.service';
 import { injectScript } from './functions/embedder';
 import { addPositionSelector } from './functions/selector-register';
-import { sendToBackend } from './functions/monitor';
+import { newTab, sendToBackend } from './functions/monitor';
 import { uploadEvents } from './services/uploader.service';
 
 export class Runner {
@@ -32,7 +32,7 @@ export class Runner {
   backendType: 'mock' | 'full';
   private sessionType: 'normal' | 'monitoring';
   private readonly monitorScript: string;
-  private sid: number;
+  bbEvents: (BLEvent | BLSessionEvent)[];
 
   constructor(private storageService: StorageService) {
     this.monitorScript = fs.readFileSync('./scripts/index.monitor.js', 'utf8');
@@ -43,11 +43,15 @@ export class Runner {
   }
 
   async run(path: string, backendType: 'full' | 'mock') {
+    this.bbEvents = [];
     this.backendType = backendType;
     this.sessionInfo.sessionPath = path.replace('.zip', '');
     const actionsZip = await this.storageService.read(path);
     unzip(new Uint8Array(actionsZip), async (err, data) => {
-      await this.runSession(data, 'normal').catch((e) => log('runner.ts: error:', e));
+      await this.runSession(data, 'monitoring').catch((e) => {
+        log('runner.ts: error:', e);
+        this.concludeSession();
+      });
       await this.uploadInfoJson();
       log('session ended gracefully');
     });
@@ -110,7 +114,7 @@ export class Runner {
     }
     this.browser = await chromium.launch({
       channel: 'chrome',
-      headless: true
+      headless: false
     });
     return await this.browser.newContext({
       viewport: this.viewport,
@@ -120,6 +124,7 @@ export class Runner {
 
   private async setupPage(jsonEvents) {
     this.page = await this.context.newPage();
+    newTab();
     let setupActionsName = ['referrer'];
     for (const actionName of setupActionsName) {
       let action = jsonEvents.find((a) => a.name === actionName);
@@ -143,6 +148,7 @@ export class Runner {
   }
 
   private async concludeSession() {
+    await this.page.evaluate(() => window.bb_monitorInstance.disable());
     const events = await this.page.evaluate(() => window.bb_events);
     await uploadEvents(this.page.url(), events);
     await this.context.close();
@@ -156,17 +162,13 @@ export class Runner {
   }
 
   private async setupMonitor() {
-    await injectScript(this.monitorScript);
-    await this.page.evaluate((sendTo) => {
-      window.bb_monitorInstance = new window.SessionMonitor(sendTo);
-      window.bb_monitorInstance.enable();
-    }, sendToBackend);
-    await this.context.exposeFunction('getSid', () => {
-      if (this.sid) return this.sid;
-      else return (this.sid = new Date().getTime());
+    await injectScript(this.page, this.monitorScript);
+    await this.context.exposeFunction('sendTo', async (event: BLEvent | BLSessionEvent) => {
+      await sendToBackend.apply(this, [event]);
     });
-    await this.context.exposeFunction('getTab', async () => {
-      return { id: await this.page.title(), url: this.page.url() };
+    await this.page.evaluate(() => {
+      window.bb_monitorInstance = new window.browserbot.SessionMonitor(window.sendTo);
+      window.bb_monitorInstance.enable();
     });
   }
 }
