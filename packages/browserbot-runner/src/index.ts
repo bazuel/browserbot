@@ -17,7 +17,7 @@ const runner = new Runner(new StorageService(new ConfigService(initGlobalConfig(
 
 const status: any = { params: {} };
 
-server.get('/api/events', (request, reply) => {
+server.get('/api/run-events', (request, reply) => {
   const params: { path?: string; backend?: 'mock' | 'full' } = request.query;
   if (params.path && params.backend)
     runner
@@ -27,7 +27,7 @@ server.get('/api/events', (request, reply) => {
   else return { message: 'bad parameters' };
 });
 
-server.get('/api/last_session', async (request, reply) => {
+server.get('/api/last-session', async (request, reply) => {
   runner.run(status.params.path, status.params.backend).then(() => reply.send({ ok: true }));
 });
 

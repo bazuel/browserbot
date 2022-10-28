@@ -52,7 +52,7 @@ export class EventController {
 
   @Get('run')
   @HasPermission('run')
-  async run(@Query('path') path: string) {
+  async runSession(@Query('path') path: string) {
     if (path) this.sessionService.run(path);
   }
 }
