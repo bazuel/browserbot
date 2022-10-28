@@ -3,6 +3,7 @@ lockfileVersion: 5.4
 specifiers:
   '@aws-sdk/client-ses': ^3.154.0
   '@browserbot/backend-shared': link:..\browserbot-backend-shared
+  '@browserbot/common': link:..\browserbot-common
   '@browserbot/model': link:..\browserbot-model
   '@browserbot/monitor': link:..\browserbot-monitor
   '@fastify/multipart': ^7.1.0
@@ -30,6 +31,7 @@ specifiers:
 dependencies:
   '@aws-sdk/client-ses': 3.154.0
   '@browserbot/backend-shared': link:../browserbot-backend-shared
+  '@browserbot/common': link:../browserbot-common
   '@browserbot/model': link:../browserbot-model
   '@fastify/multipart': 7.1.0
   '@playwright/test': 1.25.1

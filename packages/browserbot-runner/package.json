@@ -17,6 +17,7 @@
     "aws-sdk": "^2.1201.0",
     "@aws-sdk/client-ses": "^3.154.0",
     "@browserbot/model": "link:..\\browserbot-model",
+    "@browserbot/common": "link:..\\browserbot-common",
     "@browserbot/backend-shared": "link:..\\browserbot-backend-shared",
     "@fastify/multipart": "^7.1.0",
     "dayjs": "^1.11.5",

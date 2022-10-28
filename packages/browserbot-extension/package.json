@@ -24,6 +24,7 @@
   },
   "dependencies": {
     "@browserbot/monitor": "link:..\\browserbot-monitor",
+    "@browserbot/common": "link:..\\browserbot-common",
     "@butopen/design-system": "^1.1.5",
     "fflate": "^0.7.3"
   }

@@ -7,9 +7,8 @@ import { BBSessionInfo, BLSessionEvent } from '@browserbot/model';
 import { actionWhitelists, executeAction } from './services/actions.service';
 import { MockService } from './services/mock.service';
 import { log } from './services/log.service';
-import { injectScript } from './functions/embedder';
 import { addPositionSelector } from './functions/selector-register';
-import { newTab, sendToBackend } from './functions/monitor';
+import { newTab, collectEvents, addBBObjectsToWindow } from './functions/monitor';
 import { uploadEvents } from './services/uploader.service';
 
 export class Runner {
@@ -48,10 +47,7 @@ export class Runner {
     this.sessionInfo.sessionPath = path.replace('.zip', '');
     const actionsZip = await this.storageService.read(path);
     unzip(new Uint8Array(actionsZip), async (err, data) => {
-      await this.runSession(data, 'monitoring').catch((e) => {
-        log('runner.ts: error:', e);
-        this.concludeSession();
-      });
+      await this.runSession(data, 'monitoring').catch((e) => log('runner.ts: error:', e));
       await this.uploadInfoJson();
       log('session ended gracefully');
     });
@@ -79,8 +75,8 @@ export class Runner {
       this.mockService = new MockService(this.context, jsonEvents);
       jsonEvents = await this.mockService.setupMock();
     }
-    jsonEvents = await this.setupPage(jsonEvents);
     if (this.sessionType == 'monitoring') await this.setupMonitor();
+    jsonEvents = await this.setupPage(jsonEvents);
     if (this.page.url().includes('www.google.com/search?q='))
       await this.page.locator('button:has-text("Accetta tutto")').click();
     //TODO a volte accade che ci sia un input della sessione precedente come primo evento
@@ -93,7 +89,11 @@ export class Runner {
     this.takeAction = false;
     if (this.backendType == 'mock') this.mockService.actualTimestamp = action.timestamp;
     if (actionWhitelists[this.backendType].includes(action.name)) {
-      await executeAction[action.name].apply(this, [action]);
+      try {
+        await executeAction[action.name].apply(this, [action]);
+      } catch (e) {
+        await this.concludeSession();
+      }
       if (this.takeAction) {
         await this.takeShot(action);
       }
@@ -149,8 +149,7 @@ export class Runner {
 
   private async concludeSession() {
     await this.page.evaluate(() => window.bb_monitorInstance.disable());
-    const events = await this.page.evaluate(() => window.bb_events);
-    await uploadEvents(this.page.url(), events);
+    await uploadEvents(this.page.url(), this.bbEvents);
     await this.context.close();
   }
 
@@ -162,13 +161,13 @@ export class Runner {
   }
 
   private async setupMonitor() {
-    await injectScript(this.page, this.monitorScript);
     await this.context.exposeFunction('sendTo', async (event: BLEvent | BLSessionEvent) => {
-      await sendToBackend.apply(this, [event]);
+      await collectEvents.apply(this, [event]);
     });
-    await this.page.evaluate(() => {
-      window.bb_monitorInstance = new window.browserbot.SessionMonitor(window.sendTo);
-      window.bb_monitorInstance.enable();
-    });
+    await this.context.exposeFunction(
+      'createNewMonitor',
+      async () => await addBBObjectsToWindow(this.page, this.monitorScript)
+    );
+    await this.context.addInitScript(() => window.createNewMonitor());
   }
 }

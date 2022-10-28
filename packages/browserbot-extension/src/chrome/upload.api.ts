@@ -1,5 +1,5 @@
-import { JsonCompressor } from '../shared/serialization/json-compressor';
 import { BLEvent } from '@browserbot/monitor';
+import { JsonCompressor } from '@browserbot/common';
 
 export async function uploadEvents(url: string, events: BLEvent[]) {
   const zip = await new JsonCompressor().zip(events);

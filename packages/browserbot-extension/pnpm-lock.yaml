@@ -1,6 +1,7 @@
 lockfileVersion: 5.4
 
 specifiers:
+  '@browserbot/common': link:..\browserbot-common
   '@browserbot/monitor': link:..\browserbot-monitor
   '@butopen/design-system': ^1.1.5
   '@types/chrome': ^0.0.190
@@ -18,6 +19,7 @@ specifiers:
   tailwindcss: ^3.1.8
 
 dependencies:
+  '@browserbot/common': link:../browserbot-common
   '@browserbot/monitor': link:../browserbot-monitor
   '@butopen/design-system': 1.1.5
   fflate: 0.7.3
