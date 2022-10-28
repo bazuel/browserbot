@@ -1,7 +1,7 @@
-export async function injectScript(script) {
-  await this.page.evaluate((serializerScript) => {
+export async function injectScript(page, script) {
+  await page.evaluate((script) => {
     const s = document.createElement('script');
-    s.textContent = serializerScript;
+    s.textContent = script;
     document.head.appendChild(s);
   }, script);
 }
