@@ -91,11 +91,12 @@ export class Runner {
       try {
         await executeAction[action.name].apply(this, [action]);
       } catch (e) {
-        await this.concludeSession();
+        log('error running', action.name, e);
       }
+      /*
       if (this.takeAction) {
         await this.takeShot(action);
-      }
+      }*/
     }
   }
 

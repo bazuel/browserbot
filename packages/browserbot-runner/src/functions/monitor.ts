@@ -12,33 +12,21 @@ export async function setupMonitor(
   eventsCollected: BLSessionEvent[],
   monitorScript: string
 ) {
-  await context.exposeFunction('bb_get', (bbEvent) => eventsCollected.push(bbEvent));
+  await context.exposeFunction('bb_collect', (bbEvent) => eventsCollected.push(bbEvent));
   await context.exposeFunction('bb_tabId', () => tabId);
   await context.exposeFunction('bb_sid', () => sid);
-  await context.addInitScript(() => {
+  await context.addInitScript(async () => {
     window.sendTo = async (blEvent) => {
-      let documentTitle = '';
-      let tabId = await window.bb_tabId();
-      let sid = await window.bb_sid();
-      let tab = { id: tabId, url: document.URL };
-      try {
-        documentTitle = document.title;
-      } catch (e) {
-        console.log('dom-full-error:', blEvent.name, e);
-      }
-      const url = tab?.url ?? '';
-      const event = { ...blEvent, data: documentTitle };
-      await window.bb_get({ ...event, timestamp: Date.now(), url, sid, tab: tab.id });
-      console.log('collected', { name: event.name, sid, tab });
-      if (event.name == 'referrer') {
-        let cookies = document.cookie;
-        const cookieDetailsEvent = {
-          name: 'cookie-details',
-          type: 'cookie',
-          timestamp: Date.now(),
-          details: cookies
-        } as BLEvent;
-        await window.bb_get({ ...cookieDetailsEvent, url, sid, tab: tab.id });
+      const tab = await window.bb_tabId();
+      const sid = await window.bb_sid();
+      const url = document.URL;
+      const title = document.title;
+      const timestamp = Date.now();
+      await window.bb_collect({ ...blEvent, data: title, timestamp, tab, sid, url });
+      console.log('collected', { name: blEvent.name });
+      if (blEvent.name == 'referrer') {
+        const cookieEvent: BLEvent = { name: 'cookie-details', type: 'cookie', timestamp };
+        await window.bb_collect({ ...cookieEvent, details: document.cookie, url, sid, tab });
       }
     };
   });
