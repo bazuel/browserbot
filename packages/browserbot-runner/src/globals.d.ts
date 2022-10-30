@@ -11,6 +11,9 @@ export declare global {
     browserbot: { SessionMonitor: SessionMonitor };
     sendTo: (event: BLSessionEvent) => Promise<void>;
     createNewMonitor: () => {};
+    bb_get: (event: BLSessionEvent) => Promise<void>;
+    bb_tabId: () => Promise<number>;
+    bb_sid: () => Promise<number>;
   }
 }
 

@@ -75,7 +75,7 @@ export class Runner {
       jsonEvents = await this.mockService.setupMock();
     }
     if (this.sessionType == 'monitoring')
-      await setupMonitor(this.page, this.context, this.eventsCollected, this.monitorScript);
+      await setupMonitor(this.context, this.eventsCollected, this.monitorScript);
     jsonEvents = await this.setupPage(jsonEvents);
     if (this.page.url().includes('www.google.com/search?q='))
       await this.page.locator('button:has-text("Accetta tutto")').click();
