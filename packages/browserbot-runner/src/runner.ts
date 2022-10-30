@@ -2,12 +2,12 @@ import { strFromU8, unzip, Unzipped } from 'fflate';
 import fs from 'fs';
 import { Browser, BrowserContext, chromium, Page } from 'playwright';
 import { StorageService } from '@browserbot/backend-shared';
-import { BBSessionInfo, BLSessionEvent, BLWindowResizeEvent, BLEvent } from '@browserbot/model';
+import { BBSessionInfo, BLEvent, BLSessionEvent, BLWindowResizeEvent } from '@browserbot/model';
 import { actionWhitelists, executeAction } from './services/actions.service';
 import { MockService } from './services/mock.service';
 import { log } from './services/log.service';
 import { addPositionSelector } from './functions/selector-register';
-import { addBBObjectsToWindow, collectEvents, newTab } from './functions/monitor';
+import { newTab, setupMonitor } from './functions/monitor';
 import { uploadEvents } from './services/uploader.service';
 
 export class Runner {
@@ -30,7 +30,7 @@ export class Runner {
   backendType: 'mock' | 'full';
   private sessionType: 'normal' | 'monitoring';
   private readonly monitorScript: string;
-  bbEvents: BLSessionEvent[];
+  eventsCollected: BLSessionEvent[];
 
   constructor(private storageService: StorageService) {
     this.monitorScript = fs.readFileSync('./scripts/index.monitor.js', 'utf8');
@@ -41,7 +41,7 @@ export class Runner {
   }
 
   async run(path: string, backendType: 'full' | 'mock') {
-    this.bbEvents = [];
+    this.eventsCollected = [];
     this.backendType = backendType;
     this.sessionInfo.sessionPath = path.replace('.zip', '');
     const actionsZip = await this.storageService.read(path);
@@ -74,7 +74,8 @@ export class Runner {
       this.mockService = new MockService(this.context, jsonEvents);
       jsonEvents = await this.mockService.setupMock();
     }
-    if (this.sessionType == 'monitoring') await this.setupMonitor();
+    if (this.sessionType == 'monitoring')
+      await setupMonitor(this.page, this.context, this.eventsCollected, this.monitorScript);
     jsonEvents = await this.setupPage(jsonEvents);
     if (this.page.url().includes('www.google.com/search?q='))
       await this.page.locator('button:has-text("Accetta tutto")').click();
@@ -84,7 +85,6 @@ export class Runner {
   }
 
   private async runAction(action: BLEvent) {
-    log(action.name);
     this.takeAction = false;
     if (this.backendType == 'mock') this.mockService.actualTimestamp = action.timestamp;
     if (actionWhitelists[this.backendType].includes(action.name)) {
@@ -113,7 +113,8 @@ export class Runner {
     }
     this.browser = await chromium.launch({
       channel: 'chrome',
-      headless: false
+      headless: false,
+      devtools: true
     });
     return await this.browser.newContext({
       viewport: this.viewport,
@@ -148,7 +149,7 @@ export class Runner {
 
   private async concludeSession() {
     await this.page.evaluate(() => window.bb_monitorInstance.disable());
-    await uploadEvents(this.page.url(), this.bbEvents);
+    await uploadEvents(this.page.url(), this.eventsCollected);
     await this.context.close();
   }
 
@@ -157,17 +158,5 @@ export class Runner {
       Buffer.from(JSON.stringify(this.sessionInfo)),
       `${this.sessionInfo.sessionPath}/info.json`
     );
-  }
-
-  private async setupMonitor() {
-    await this.context.exposeFunction(
-      'sendTo',
-      async (event: BLSessionEvent) => await collectEvents.apply(this, [event])
-    );
-    await this.context.exposeFunction(
-      'createNewMonitor',
-      async () => await addBBObjectsToWindow(this.page, this.monitorScript)
-    );
-    await this.context.addInitScript(() => window.createNewMonitor());
   }
 }

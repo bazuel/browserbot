@@ -1,4 +1,4 @@
-import { Controller, Get, Query, Res } from '@nestjs/common';
+import { Controller, Get, Query } from '@nestjs/common';
 import { PostgresDbService } from '../shared/services/postgres-db.service';
 import { HasPermission } from '../shared/token.decorator';
 import { SessionService } from './session.service';
