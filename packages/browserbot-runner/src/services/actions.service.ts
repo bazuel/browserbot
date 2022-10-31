@@ -19,19 +19,16 @@ export const actionWhitelists: { [k: string]: BLEventName[] } = {
     'mousedown',
     'mouseup',
     'elementscroll',
-    'keyup',
-    'keydown',
     'mousemove',
     'scroll',
     'contextmenu',
-    'resize'
+    'resize',
+    'input'
   ],
   mock: [
     'mousedown',
     'mouseup',
     'elementscroll',
-    'keyup',
-    'keydown',
     'mousemove',
     'scroll',
     'contextmenu',
@@ -82,22 +79,17 @@ export async function executeResize(a: BLWindowResizeEvent) {
 }
 
 export async function executeInput(a: BBEventWithSerializedTarget<BLInputChangeEvent>) {
-  if (!this.lastAction.name.includes('key') && !this.nextAction.name.includes('key')) {
-    await locatorFromTarget(a.target, this.page).then(async (locator) => {
+  await locatorFromTarget(a.target, this.page).then(async (locator) => {
+    await locator.fill(a.value, { timeout: 1000 }).catch(async () => {
       let missingTextLength = a.value.length - (await locator.inputValue()).length;
-      if (missingTextLength >= 2) {
-        log('filling text due to autocomplete');
-        await locator.fill(a.value, { timeout: 1000 }).catch(async () => {
-          for (const word of a.value.slice(-missingTextLength)) {
-            await executeAction.keydown.apply(this, [{ key: word }]);
-            await executeAction.keyup.apply(this, [{ key: word }]);
-          }
-          log('switch from input to key:', a.value);
-        });
+      for (const word of a.value.slice(-missingTextLength)) {
+        await executeAction.keydown.apply(this, [{ key: word }]);
+        await executeAction.keyup.apply(this, [{ key: word }]);
       }
+      log('switch from input to key:', a.value);
     });
-    this.takeAction = true;
-  }
+  });
+  this.takeAction = true;
 }
 
 export async function executeKeyUp(a: BBEventWithSerializedTarget<BLKeyboardEvent>) {
@@ -106,8 +98,6 @@ export async function executeKeyUp(a: BBEventWithSerializedTarget<BLKeyboardEven
 }
 
 export async function executeKeyDown(a: BBEventWithSerializedTarget<BLKeyboardEvent>) {
-  //TODO: inserimento manuale della chiocciola
-  if (a.key == '@') await this.page.keyboard.insertText('@');
   await this.page.keyboard.down(a.key).catch(async () => {
     await this.page.keyboard.insertText(a.key);
   });

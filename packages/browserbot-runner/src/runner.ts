@@ -17,7 +17,6 @@ export class Runner {
   viewport: { width: number; height: number };
   useragent: string;
   private lastAction: BLEvent;
-  private nextAction: BLEvent;
   private takeAction: boolean;
   private filename: string;
   context: BrowserContext;
@@ -27,6 +26,8 @@ export class Runner {
   private readonly monitorScript: string;
   eventsCollected: BLSessionEvent[];
   private sessionReference: string;
+  private speed: 1;
+  private currentAction: BLEvent;
 
   constructor(private storageService: StorageService) {
     this.monitorScript = fs.readFileSync('./scripts/index.monitor.js', 'utf8');
@@ -57,9 +58,11 @@ export class Runner {
       let jsonEvents: BLEvent[] = JSON.parse(raw);
       jsonEvents = await this.setup(jsonEvents);
       for (let i = 0; i < jsonEvents.length; i++) {
-        this.lastAction = jsonEvents[i - 1];
-        this.nextAction = jsonEvents[i + 1];
-        await this.runAction(jsonEvents[i]);
+        if (actionWhitelists[this.backendType].includes(jsonEvents[i].name)) {
+          this.lastAction = this.currentAction;
+          this.currentAction = jsonEvents[i];
+          await this.runAction(jsonEvents[i]);
+        }
       }
       await this.concludeSession();
     }
@@ -84,21 +87,18 @@ export class Runner {
   private async runAction(action: BLEvent) {
     this.takeAction = false;
     if (this.backendType == 'mock') this.mockService.actualTimestamp = action.timestamp;
-    if (actionWhitelists[this.backendType].includes(action.name)) {
-      try {
-        const speed = 1;
-        if (this.lastAction)
-          await this.page.waitForTimeout(
-            (this.lastAction.timestamp - action.timestamp) * (1 / speed)
-          );
-        await executeAction[action.name].apply(this, [action]);
-      } catch (e) {
-        log('error running', action.name, e);
-      }
-      // if (this.sessionType == 'normal' && this.takeAction) {
-      //   await this.takeShot(action);
-      // }
+    try {
+      if (this.lastAction)
+        await this.page.waitForTimeout(
+          (this.lastAction.timestamp - action.timestamp) * (1 / this.speed)
+        );
+      await executeAction[action.name].apply(this, [action]);
+    } catch (e) {
+      log('error running', action.name, e);
     }
+    // if (this.sessionType == 'normal' && this.takeAction) {
+    //   await this.takeShot(action);
+    // }
   }
 
   private async setupContext(jsonEvents: BLEvent[]) {
