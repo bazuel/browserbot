@@ -38,8 +38,8 @@ export class EventController {
 
   @Get('screenshot')
   @HasPermission('download')
-  async downloadScreenshot(@Query('path') path) {
-    return await this.eventService.readByPath(path);
+  async downloadScreenshot(@Query('reference') reference) {
+    return await this.eventService.readByReference(reference);
   }
 
   @Get('run')

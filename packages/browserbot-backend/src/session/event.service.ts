@@ -3,7 +3,7 @@ import { TimeService } from '../time/time.service';
 import { PostgresDbService, sql } from '../shared/services/postgres-db.service';
 import { CrudService } from '../shared/services/crud.service';
 import { BLEventName, BLEventType, BLSessionEvent } from '@browserbot/model';
-import { eventPath } from 'browserbot-common';
+import { eventPath, pathFromReference } from 'browserbot-common';
 import { StorageService } from '@browserbot/backend-shared/dist';
 
 export interface BBEvent {
@@ -74,8 +74,8 @@ export class EventService extends CrudService<BBEvent> implements OnModuleInit {
     }
   }
 
-  async readByPath(path: string) {
-    return await this.storageService.read(path);
+  async readByReference(reference: string) {
+    return await this.storageService.read(pathFromReference(encodeURIComponent(reference)));
   }
 
   private jsonSizeKb(json) {
