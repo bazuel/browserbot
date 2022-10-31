@@ -25,5 +25,5 @@ export async function uploadEvents(url: string, events: BLEvent[]) {
 
 export async function linkSessions(masterPath: string, newPath: string) {
   const body = { masterPath, newPath };
-  await post('http://127.0.0.1:3005/api/session/link', body);
+  await post('http://127.0.0.1:3005/api/session/link', JSON.stringify(body));
 }

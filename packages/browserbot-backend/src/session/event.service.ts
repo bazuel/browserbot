@@ -57,7 +57,7 @@ export class EventService extends CrudService<BBEvent> implements OnModuleInit {
         created TIMESTAMPTZ
     );`;
     await this.db
-      .query`CREATE INDEX if not exists  bb_hit_index ON bb_hit(url,name,sid,tab,timestamp);`;
+      .query`CREATE INDEX if not exists  bb_event_index ON bb_event(url,name,sid,tab,timestamp);`;
     await this.db
       .query`CREATE INDEX if not exists  "bb_event_timestamp" ON "bb_event" ("timestamp");`;
     await this.db.query`CREATE INDEX if not exists  "bb_event_name" ON "bb_event" ("name");`;

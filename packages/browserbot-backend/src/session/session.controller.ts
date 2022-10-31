@@ -49,8 +49,9 @@ export class SessionController {
   }
 
   @Post('link')
-  async link(@Body() body: { masterPath: string; newPath: string }) {
-    await this.sessionService.link(body.masterPath, body.newPath);
+  async link(@Body() body: string) {
+    const data = JSON.parse(body);
+    await this.sessionService.link(data.masterPath, data.newPath);
     return { ok: true };
   }
 

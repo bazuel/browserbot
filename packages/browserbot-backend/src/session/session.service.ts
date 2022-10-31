@@ -76,7 +76,7 @@ export class SessionService extends CrudService<BBSession> implements OnModuleIn
   async link(masterSession: string, newSession: string) {
     await this.db.query`
             update bb_session
-            set master_session = ${masterSession}
+            set master_session = ${encodeURIComponent(masterSession)}
             where reference = ${newSession}`;
   }
 }
