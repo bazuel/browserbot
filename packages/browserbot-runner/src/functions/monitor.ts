@@ -15,6 +15,7 @@ export async function setupMonitor(
   await context.exposeFunction('bb_collect', (bbEvent) => eventsCollected.push(bbEvent));
   await context.exposeFunction('bb_tabId', () => tabId);
   await context.exposeFunction('bb_sid', () => sid);
+  await context.addInitScript(monitorScript);
   await context.addInitScript(async () => {
     window.sendTo = async (blEvent) => {
       const tab = await window.bb_tabId();
@@ -29,9 +30,6 @@ export async function setupMonitor(
         await window.bb_collect({ ...cookieEvent, details: document.cookie, url, sid, tab });
       }
     };
-  });
-  await context.addInitScript(monitorScript);
-  await context.addInitScript(() => {
     window.bb_monitorInstance = new window.browserbot.SessionMonitor(window.sendTo);
     window.bb_monitorInstance.enable();
   });

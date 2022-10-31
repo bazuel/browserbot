@@ -93,10 +93,9 @@ export class Runner {
       } catch (e) {
         log('error running', action.name, e);
       }
-      /*
-      if (this.takeAction) {
+      if (this.sessionType == 'normal' && this.takeAction) {
         await this.takeShot(action);
-      }*/
+      }
     }
   }
 

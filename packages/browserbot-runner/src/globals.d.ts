@@ -18,7 +18,7 @@ export declare global {
 }
 
 export interface SessionMonitor {
-  new (sendTo: (event: BLSessionEvent) => Promise<void>);
+  new (sendTo: (event: BLEvent) => Promise<void>);
   enable: () => {};
   disable: () => {};
 }
