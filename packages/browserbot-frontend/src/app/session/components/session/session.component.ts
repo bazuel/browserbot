@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import {BBScreenShot, BBSession, BBSessionInfo, BLSessionEvent} from '@browserbot/model';
+import { BBScreenShot, BBSession, BBSessionInfo, BLSessionEvent } from '@browserbot/model';
 import { UrlParamsService } from '../../../shared/services/url-params.service';
 import { SessionService } from '../../services/session.service';
 import { ShowFullScreenLoading } from '../../../shared/services/loading.service';
@@ -59,6 +59,6 @@ export class SessionComponent implements OnInit {
   }
 
   async runSession() {
-    await this.sessionService.runSession(this.sessionInfo.sessionPath, this.sessionMocked);
+    await this.sessionService.runSession(this.sessionInfo.sessionReference, this.sessionMocked);
   }
 }

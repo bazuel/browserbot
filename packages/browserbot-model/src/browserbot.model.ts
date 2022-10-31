@@ -40,8 +40,9 @@ export interface BBAddress {
 export interface BBSession {
   bb_sessionid?: string;
   url: string;
-  path: string;
+  reference: string;
   owner?: BBUser;
+  master_session: string;
 }
 
 export type BBEventWithSerializedTarget<T> = T & {
@@ -57,7 +58,7 @@ export type BBSerializedTarget = {
 };
 
 export type BBSessionInfo = {
-  sessionPath: string;
+  sessionReference: string;
   screenshots: BBScreenShot[];
   domShots: BBDomShot[];
   video: BBVideo;

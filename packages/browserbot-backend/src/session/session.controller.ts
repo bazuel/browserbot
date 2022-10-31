@@ -1,19 +1,29 @@
-import { Controller, Get, Post, Query, Req, Res, StreamableFile } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query, Req, Res, StreamableFile } from '@nestjs/common';
 import { SessionService } from './session.service';
 import { BLSessionEvent } from '@browserbot/model';
-import { domainFromUrl, eventId, streamToBuffer, unzipJson } from 'browserbot-common';
+import { eventReference, pathFromReference, streamToBuffer, unzipJson } from 'browserbot-common';
 import { EventService } from './event.service';
-import { StorageService } from '@browserbot/backend-shared';
-import { TimeService } from '../time/time.service';
+
+type MultipartFile = {
+  file: ReadableStream;
+  fileField: string;
+  filename: string;
+  mimetype: string;
+  fields: {
+    [key: string]: {
+      encoding: string;
+      fieldname: string;
+      fieldnameTruncated: false;
+      mimetype: string;
+      value: string;
+      valueTruncated: boolean;
+    };
+  };
+};
 
 @Controller('session')
 export class SessionController {
-  constructor(
-    private sessionService: SessionService,
-    private hitService: EventService,
-    private storageService: StorageService,
-    private timeService: TimeService
-  ) {}
+  constructor(private sessionService: SessionService, private eventService: EventService) {}
 
   @Get('download')
   async download(@Res({ passthrough: true }) res, @Query('path') path) {
@@ -24,44 +34,24 @@ export class SessionController {
   }
 
   @Post('upload')
-  async uploadFile(@Req() req, @Res() res): Promise<any> {
+  async upload(@Req() req, @Res() res): Promise<any> {
     if (!req.isMultipart()) throw new Error('Not a multipart request');
-
-    const data: {
-      file;
-      fileField: string;
-      filename: string;
-      mimetype: string;
-      fields: {
-        [key: string]: {
-          encoding: string;
-          fieldname: string;
-          fieldnameTruncated: false;
-          mimetype: string;
-          value: string;
-          valueTruncated: boolean;
-        };
-      };
-    } = await req.file();
-    const zipFile = data.file;
-    //const url = data.fields['url']?.value;
-    const zipBuffer = await streamToBuffer(zipFile as ReadableStream);
+    const data: MultipartFile = await req.file();
+    const zipBuffer = await streamToBuffer(data.file);
     const events: BLSessionEvent[] = await unzipJson(zipBuffer);
-    const reference = eventId(events[0]!);
-    const path = `${domainFromUrl(
-      events[0]!.url
-    )}/${this.timeService.todayAsString()}/${reference}.zip`;
-    this.hitService.save(events, reference);
-    this.storageService.upload(zipBuffer, path);
-    /*
-    
-    const { path, id } = await this.sessionService.saveSession(
-      zipFile,
-      url
-    );
-     */
-    console.log('path: ', encodeURIComponent(path));
-    res.send({ ok: true, path: encodeURIComponent(path), reference });
+    const reference = eventReference(events[0]);
+    const url = events[0].url;
+    this.eventService.save(events, reference);
+    this.sessionService.save(zipBuffer, url, reference);
+    console.log('path: ', encodeURIComponent(pathFromReference(reference)));
+    console.log('reference: ', reference);
+    res.send({ ok: true, reference });
+  }
+
+  @Post('link')
+  async link(@Body() body: { masterPath: string; newPath: string }) {
+    await this.sessionService.link(body.masterPath, body.newPath);
+    return { ok: true };
   }
 
   @Get('screenshot')
@@ -87,7 +77,7 @@ export class SessionController {
   @Get('info-by-id')
   async getInfoById(@Res({ passthrough: true }) res, @Query('id') id) {
     const session = await this.sessionService.findById(id);
-    const path = session.path.replace('.zip', '/info.json');
+    const path = session.reference.replace('.zip', '/info.json');
     return await this.getStreamByPath(path, res);
   }
 

@@ -2,13 +2,14 @@ import { strFromU8, unzip, Unzipped } from 'fflate';
 import fs from 'fs';
 import { Browser, BrowserContext, chromium, Page } from 'playwright';
 import { StorageService } from '@browserbot/backend-shared';
-import { BBSessionInfo, BLEvent, BLSessionEvent, BLWindowResizeEvent } from '@browserbot/model';
+import { BLEvent, BLSessionEvent, BLWindowResizeEvent } from '@browserbot/model';
 import { actionWhitelists, executeAction } from './services/actions.service';
 import { MockService } from './services/mock.service';
 import { log } from './services/log.service';
 import { addPositionSelector } from './functions/selector-register';
 import { newTab, setupMonitor } from './functions/monitor';
-import { uploadEvents } from './services/uploader.service';
+import { linkSessions, uploadEvents } from './services/http.service';
+import { pathFromReference } from '@browserbot/common';
 
 export class Runner {
   browser: Browser;
@@ -18,12 +19,6 @@ export class Runner {
   private lastAction: BLEvent;
   private nextAction: BLEvent;
   private takeAction: boolean;
-  private sessionInfo: BBSessionInfo = {
-    sessionPath: '',
-    screenshots: [],
-    video: { filename: '' },
-    domShots: []
-  };
   private filename: string;
   context: BrowserContext;
   private mockService: MockService;
@@ -31,6 +26,7 @@ export class Runner {
   private sessionType: 'normal' | 'monitoring';
   private readonly monitorScript: string;
   eventsCollected: BLSessionEvent[];
+  private sessionReference: string;
 
   constructor(private storageService: StorageService) {
     this.monitorScript = fs.readFileSync('./scripts/index.monitor.js', 'utf8');
@@ -40,14 +36,15 @@ export class Runner {
     addPositionSelector().then((_) => log('Context ready'));
   }
 
-  async run(path: string, backendType: 'full' | 'mock') {
+  async run(reference: string, backendType: 'full' | 'mock') {
     this.eventsCollected = [];
     this.backendType = backendType;
-    this.sessionInfo.sessionPath = path.replace('.zip', '');
-    const actionsZip = await this.storageService.read(path);
+    this.sessionReference = reference;
+    const actionsZip = await this.storageService.read(
+      pathFromReference(encodeURIComponent(reference))
+    );
     unzip(new Uint8Array(actionsZip), async (err, data) => {
-      await this.runSession(data, 'monitoring').catch((e) => log('runner.ts: error:', e));
-      await this.uploadInfoJson();
+      await this.runSession(data, 'normal').catch((e) => log('runner.ts: error:', e));
       log('session ended gracefully');
     });
   }
@@ -89,13 +86,18 @@ export class Runner {
     if (this.backendType == 'mock') this.mockService.actualTimestamp = action.timestamp;
     if (actionWhitelists[this.backendType].includes(action.name)) {
       try {
+        const speed = 1;
+        if (this.lastAction)
+          await this.page.waitForTimeout(
+            (this.lastAction.timestamp - action.timestamp) * (1 / speed)
+          );
         await executeAction[action.name].apply(this, [action]);
       } catch (e) {
         log('error running', action.name, e);
       }
-      if (this.sessionType == 'normal' && this.takeAction) {
-        await this.takeShot(action);
-      }
+      // if (this.sessionType == 'normal' && this.takeAction) {
+      //   await this.takeShot(action);
+      // }
     }
   }
 
@@ -136,27 +138,18 @@ export class Runner {
   }
 
   private async takeShot(action: BLEvent) {
-    this.filename = `${this.sessionInfo.sessionPath}/${action.name}/${action.timestamp}`;
-
+    this.filename = `${this.sessionReference}/${action.name}/${action.timestamp}`;
     await this.page.screenshot().then((bufferScreenShot) => {
       this.storageService.upload(bufferScreenShot, this.filename + '.png');
-    });
-    this.sessionInfo.screenshots.push({
-      filename: this.filename + '.png',
-      dimension: this.page.viewportSize()
     });
   }
 
   private async concludeSession() {
-    await this.page.evaluate(() => window.bb_monitorInstance.disable());
-    await uploadEvents(this.page.url(), this.eventsCollected);
+    if (this.sessionType == 'monitoring') {
+      await this.page.evaluate(() => window.bb_monitorInstance.disable());
+      const newReference = await uploadEvents(this.page.url(), this.eventsCollected);
+      await linkSessions(this.sessionReference, newReference);
+    }
     await this.context.close();
-  }
-
-  private async uploadInfoJson() {
-    await this.storageService.upload(
-      Buffer.from(JSON.stringify(this.sessionInfo)),
-      `${this.sessionInfo.sessionPath}/info.json`
-    );
   }
 }

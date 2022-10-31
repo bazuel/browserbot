@@ -4,6 +4,7 @@ import { TimeService } from '../time/time.service';
 import { PostgresDbService, sql } from '../shared/services/postgres-db.service';
 import { CrudService } from '../shared/services/crud.service';
 import { BBSession } from '@browserbot/model';
+import { pathFromReference } from 'browserbot-common';
 
 @Injectable()
 export class SessionService extends CrudService<BBSession> implements OnModuleInit {
@@ -30,19 +31,20 @@ export class SessionService extends CrudService<BBSession> implements OnModuleIn
                 create table if not exists ${sql(this.table)} (
                     ${sql(this.id)} BIGSERIAL PRIMARY KEY,
                     url text,
-                    path text,
+                    reference text,
                     bb_userid BIGINT,
+                    master_session text,
                     created TIMESTAMPTZ,
-                     CONSTRAINT bb_session_bb_userid FOREIGN KEY(bb_userid) REFERENCES bb_user(bb_userid) 
+                     CONSTRAINT bb_session_bb_userid FOREIGN KEY(bb_userid) REFERENCES bb_user(bb_userid)
                 );
             `;
   }
 
-  async saveSession(session: Buffer, url: string) {
-    const path = this.path(url);
-    const id = (await this.create({ url, path }))[0].bb_sessionid;
-    this.storageService.upload(session, path).then(() => this.run(path));
-    return { path, id };
+  async save(session: Buffer, url: string, reference: string) {
+    const path = pathFromReference(reference);
+    const id = await this.create({ url, reference }).then((result) => result[0].bb_sessionid);
+    await this.storageService.upload(session, path); //.then(() => this.run(path));
+    return { id };
   }
 
   async sessionStream(path: string) {
@@ -53,10 +55,6 @@ export class SessionService extends CrudService<BBSession> implements OnModuleIn
     return await this.storageService.read(path);
   }
 
-  async findByPath(path: string) {
-    return await this.findByField('path', path);
-  }
-
   path(url: string) {
     const u = new URL(url);
     const path = (u.pathname ?? '/').substring(1).replace(/\//g, '_@bb@_') || '_@bb@_';
@@ -65,13 +63,20 @@ export class SessionService extends CrudService<BBSession> implements OnModuleIn
     )}/${Date.now()}-${Math.round(Math.random() * 1000)}.zip`;
   }
 
-  run(path: BBSession['path']) {
+  run(reference: BBSession['reference']) {
     const urlParams = new URLSearchParams({
-      path: path,
+      reference: reference,
       backend: 'mock'
     });
     fetch(`${this.configService.runner_url}/api/run-events?${urlParams}`).then(() =>
-      console.log('running session: ', path)
+      console.log('running session: ', reference)
     );
+  }
+
+  async link(masterSession: string, newSession: string) {
+    await this.db.query`
+            update bb_session
+            set master_session = ${masterSession}
+            where reference = ${newSession}`;
   }
 }

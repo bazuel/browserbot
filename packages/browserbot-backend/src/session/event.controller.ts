@@ -3,7 +3,7 @@ import { PostgresDbService } from '../shared/services/postgres-db.service';
 import { HasPermission } from '../shared/token.decorator';
 import { SessionService } from './session.service';
 import { BBEvent, EventService } from './event.service';
-import { unzipJson } from 'browserbot-common';
+import { BBSession, pathFromReference, unzipJson } from 'browserbot-common';
 
 @Controller('event')
 export class EventController {
@@ -22,7 +22,8 @@ export class EventController {
   @Get('session')
   @HasPermission('download')
   async downloadSession(@Query() query) {
-    let { path, ...filters } = query;
+    let { reference, ...filters } = query;
+    const path = pathFromReference(reference);
     let eventList: BBEvent[] = await this.sessionService
       .sessionBuffer(path)
       .then((buffer) => unzipJson(buffer));
@@ -35,15 +36,6 @@ export class EventController {
     return eventList;
   }
 
-  @Get('detailed')
-  @HasPermission('download')
-  async downloadDetails(@Query('id') id) {
-    const event = await this.eventService.findById(id);
-    if (Object.keys(event.data).length == 0)
-      event.data = await this.eventService.readByPath(event.data_path);
-    return event;
-  }
-
   @Get('screenshot')
   @HasPermission('download')
   async downloadScreenshot(@Query('path') path) {
@@ -52,7 +44,7 @@ export class EventController {
 
   @Get('run')
   @HasPermission('run')
-  async runSession(@Query('path') path: string) {
-    if (path) this.sessionService.run(path);
+  async runSession(@Query('reference') reference: BBSession['reference']) {
+    if (reference) this.sessionService.run(reference);
   }
 }

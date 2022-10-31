@@ -86,7 +86,7 @@ export class EventService extends CrudService<BBEvent> implements OnModuleInit {
     const { url, sid, tab, timestamp, type, name, ...data } = h;
     if (this.jsonSizeKb(h) > 5) {
       const data_path = eventPath(h);
-      return { url, sid, tab, timestamp, type, name, data: {}, data_path, reference };
+      return { url, sid, tab, timestamp, type, name, data: {}, reference };
     } else return { url, sid, tab, timestamp, type, name, data, reference };
   }
 }
