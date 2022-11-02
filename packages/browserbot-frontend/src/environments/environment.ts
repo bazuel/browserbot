@@ -5,7 +5,8 @@
 export const environment = {
   production: false,
   api_backend: 'http://localhost:3005',
-  api_runner: 'http://localhost:3000'
+  api_runner: 'http://localhost:3000',
+  pagepins_frontend: 'http://localhost:4200'
 };
 
 /*

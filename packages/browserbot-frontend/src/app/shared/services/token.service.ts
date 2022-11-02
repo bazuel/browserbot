@@ -8,6 +8,7 @@ import dayjs from 'dayjs'; // load on demand
 export class TokenService {
   static TOKEN = 'BROWSERBOT_TOKEN';
   static TOKEN_TEMP = 'BROWSERBOT_TOKEN_TEMP';
+  static API_TOKEN = 'BROWSERBOT_API_TOKEN';
 
   constructor() {}
 
@@ -28,6 +29,14 @@ export class TokenService {
 
   set(token: string) {
     localStorage.setItem(TokenService.TOKEN, token);
+  }
+
+  setApiToken(token: string) {
+    localStorage.setItem(TokenService.API_TOKEN, token);
+  }
+
+  getApiToken() {
+    return localStorage.getItem(TokenService.API_TOKEN);
   }
 
   setTemporaryToken(token: string) {
