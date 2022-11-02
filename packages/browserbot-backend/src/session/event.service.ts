@@ -3,8 +3,8 @@ import { TimeService } from '../time/time.service';
 import { PostgresDbService, sql } from '../shared/services/postgres-db.service';
 import { CrudService } from '../shared/services/crud.service';
 import { BLEventName, BLEventType, BLSessionEvent } from '@browserbot/model';
-import { eventPath, pathFromReference } from 'browserbot-common';
-import { StorageService } from '@browserbot/backend-shared/dist';
+import { pathFromReference } from 'browserbot-common';
+import { StorageService } from '@browserbot/backend-shared';
 
 export interface BBEvent {
   bb_eventid: number;
@@ -84,9 +84,9 @@ export class EventService extends CrudService<BBEvent> implements OnModuleInit {
 
   private handleSize(h: BLSessionEvent, reference: string) {
     const { url, sid, tab, timestamp, type, name, ...data } = h;
-    if (this.jsonSizeKb(h) > 5) {
+    /*if (this.jsonSizeKb(h) > 5) {
       const data_path = eventPath(h);
       return { url, sid, tab, timestamp, type, name, data: {}, reference };
-    } else return { url, sid, tab, timestamp, type, name, data, reference };
+    } else*/ return { url, sid, tab, timestamp, type, name, data, reference };
   }
 }

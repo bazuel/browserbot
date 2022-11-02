@@ -42,7 +42,7 @@ export interface BBSession {
   url: string;
   reference: string;
   owner?: BBUser;
-  master_session: string;
+  master_session?: string;
 }
 
 export type BBEventWithSerializedTarget<T> = T & {

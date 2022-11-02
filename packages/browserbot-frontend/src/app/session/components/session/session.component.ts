@@ -10,7 +10,7 @@ import { ShowFullScreenLoading } from '../../../shared/services/loading.service'
   styleUrls: ['./session.component.scss']
 })
 export class SessionComponent implements OnInit {
-  session: BBSession = { path: '', url: '' };
+  session: BBSession = { reference: '', url: '' };
   sessionInfo: BBSessionInfo;
   sessionEvents: BLSessionEvent[] = [];
   ready = false;
@@ -33,10 +33,10 @@ export class SessionComponent implements OnInit {
       this.session.bb_sessionid = sessionid;
       this.sessionInfo = await this.sessionService.getSessionInfoById(sessionid);
     }
-    const sessionPath = this.urlParamsService.get('path');
-    if (sessionPath && !sessionid) {
-      this.session.path = sessionPath;
-      this.sessionEvents = await this.sessionService.downloadSession(sessionPath);
+    const sessionReference = this.urlParamsService.get('path');
+    if (sessionReference && !sessionid) {
+      this.session.reference = sessionReference;
+      this.sessionEvents = await this.sessionService.downloadSession(sessionReference);
       console.log(this.sessionInfo);
     }
     this.ready = true;
