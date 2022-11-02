@@ -182,8 +182,9 @@ export class UserController {
     @UserId() userId: BBUser['bb_userid'],
     @Query('permission_type') permissionType: BBApiPermissionType
   ) {
+    const email = (await this.userService.findById(userId)).email;
     const apiToken = this.tokenService.generate(
-      <Partial<ApiTokenData>>{ userId, api: [permissionType] },
+      <Partial<ApiTokenData>>{ userId, email, roles: ['USER'], api: [permissionType] },
       '1y'
     );
     await this.userService.updateUser({ bb_userid: userId, api_token: apiToken });
