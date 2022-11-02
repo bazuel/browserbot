@@ -37,7 +37,7 @@ export class Runner {
     addPositionSelector().then((_) => log('Context ready'));
   }
 
-  async run(reference: string, backendType: 'full' | 'mock') {
+  async run(reference: string, backendType: 'full' | 'mock', sessionType: typeof this.sessionType) {
     this.eventsCollected = [];
     this.backendType = backendType;
     this.sessionReference = reference;
@@ -45,7 +45,7 @@ export class Runner {
       pathFromReference(encodeURIComponent(reference))
     );
     unzip(new Uint8Array(actionsZip), async (err, data) => {
-      await this.runSession(data, 'normal').catch((e) => log('runner.ts: error:', e));
+      await this.runSession(data, sessionType).catch((e) => log('runner.ts: error:', e));
       log('session ended gracefully');
     });
   }

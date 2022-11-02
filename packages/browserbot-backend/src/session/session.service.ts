@@ -66,7 +66,8 @@ export class SessionService extends CrudService<BBSession> implements OnModuleIn
   run(reference: BBSession['reference']) {
     const urlParams = new URLSearchParams({
       reference: reference,
-      backend: 'mock'
+      backend: 'mock',
+      session: 'normal'
     });
     fetch(`${this.configService.runner_url}/api/run-events?${urlParams}`).then(() =>
       console.log('running session: ', reference)

@@ -18,17 +18,26 @@ const runner = new Runner(new StorageService(new ConfigService(initGlobalConfig(
 const status: any = { params: {} }; //TODO serve?
 
 server.get('/api/run-events', (request, reply) => {
-  const params: { reference?: string; backend?: 'mock' | 'full' } = request.query;
+  const params: {
+    reference?: string;
+    backend?: 'mock' | 'full';
+    session?: 'monitoring' | 'normal';
+  } = request.query;
   if (params.reference && params.backend)
     runner
-      .run(params.reference, params.backend)
-      .then(() => reply.send({ ok: true }))
+      .run(params.reference, params.backend, params.session)
+      .then(() => {
+        status.params = { ...params };
+        reply.send({ ok: true });
+      })
       .catch((reason) => reply.send({ ok: false, reason: reason }));
   else return { message: 'bad parameters' };
 });
 
 server.get('/api/last-session', async (request, reply) => {
-  runner.run(status.params.reference, status.params.backend).then(() => reply.send({ ok: true }));
+  runner
+    .run(status.params.reference, status.params.backend, status.params.session)
+    .then(() => reply.send({ ok: true }));
 });
 
 const start = async () => {
