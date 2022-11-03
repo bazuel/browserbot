@@ -75,7 +75,8 @@ export class EventService extends CrudService<BBEvent> implements OnModuleInit {
   }
 
   async readByReference(reference: string) {
-    return await this.storageService.read(pathFromReference(encodeURIComponent(reference)));
+    const path = pathFromReference(encodeURIComponent(reference));
+    return await this.storageService.read(path);
   }
 
   private jsonSizeKb(json) {
