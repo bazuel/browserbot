@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { BBScreenShot, BBSession, BBSessionInfo, BLSessionEvent } from '@browserbot/model';
+import { BBScreenShot, BBSession, BLSessionEvent } from '@browserbot/model';
 import { UrlParamsService } from '../../../shared/services/url-params.service';
 import { SessionService } from '../../services/session.service';
 import { ShowFullScreenLoading } from '../../../shared/services/loading.service';
@@ -11,7 +11,6 @@ import { ShowFullScreenLoading } from '../../../shared/services/loading.service'
 })
 export class SessionComponent implements OnInit {
   session: BBSession = { reference: '', url: '' };
-  sessionInfo: BBSessionInfo;
   sessionEvents: BLSessionEvent[] = [];
   ready = false;
   detailsAction: {
@@ -28,16 +27,10 @@ export class SessionComponent implements OnInit {
 
   @ShowFullScreenLoading()
   async ngOnInit() {
-    const sessionid = this.urlParamsService.get('id');
-    if (sessionid) {
-      this.session.bb_sessionid = sessionid;
-      this.sessionInfo = await this.sessionService.getSessionInfoById(sessionid);
-    }
     const sessionReference = this.urlParamsService.get('path');
-    if (sessionReference && !sessionid) {
+    if (sessionReference) {
       this.session.reference = sessionReference;
-      this.sessionEvents = await this.sessionService.downloadSession(sessionReference);
-      console.log(this.sessionInfo);
+      this.sessionEvents = []; //await this.sessionService.downloadSession(sessionReference);
     }
     this.ready = true;
   }
@@ -58,7 +51,5 @@ export class SessionComponent implements OnInit {
     this.imgLoaded = true;
   }
 
-  async runSession() {
-    await this.sessionService.runSession(this.sessionInfo.sessionReference, this.sessionMocked);
-  }
+  async runSession() {}
 }

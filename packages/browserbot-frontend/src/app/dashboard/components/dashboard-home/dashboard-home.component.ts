@@ -14,7 +14,7 @@ export class DashboardHomeComponent implements OnInit {
 
   redirectToPagePins() {
     const reference =
-      '1667397836793_dom_dom-full_1666171426466_633167570_https%3A%2F%2Fstaging.agentesmith.com%2Fdashboard%2Fhome';
+      '1667466329894_dom_dom-full_1666171426466_633167932_https%3A%2F%2Fstaging.agentesmith.com%2Fcompany%2Fcompany-dashboard';
     window.open(
       `${
         environment.pagepins_frontend

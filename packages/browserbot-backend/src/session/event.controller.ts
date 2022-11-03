@@ -40,7 +40,7 @@ export class EventController {
   @HasPermission('download')
   async downloadScreenshot(@Query('reference') reference) {
     const result = await this.eventService.readByReference(reference);
-    return unzipJson(result);
+    return await unzipJson(result).then((result) => result[0]);
   }
 
   @Get('run')

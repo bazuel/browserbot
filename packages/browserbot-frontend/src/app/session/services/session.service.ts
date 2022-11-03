@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpService } from '../../shared/services/http.service';
-import { BBSessionInfo, BLSessionEvent } from '@browserbot/model';
+import { BLSessionEvent } from '@browserbot/model';
 import { environment } from '../../../environments/environment';
 import { unzipJson } from 'browserbot-common';
 
@@ -16,14 +16,6 @@ export class SessionService {
     );
     const events = await unzipJson(raw as Buffer);
     return events as BLSessionEvent[];
-  }
-
-  async getSessionInfoByPath(path: string) {
-    return await this.httpService.gest<BBSessionInfo>('/session/info-by-path', { path });
-  }
-
-  async getSessionInfoById(id: string) {
-    return await this.httpService.gest<BBSessionInfo>('/session/info-by-id', { id });
   }
 
   async runSession(path: string, mocked: boolean) {

@@ -54,7 +54,7 @@ export class SessionController {
     await this.sessionService.link(data.masterPath, data.newPath);
     return { ok: true };
   }
-
+  /*
   @Get('screenshot')
   async getScreenshot(@Res({ passthrough: true }) res, @Query('path') path) {
     return await this.getStreamByPath(path + '.png', res);
@@ -81,7 +81,7 @@ export class SessionController {
     const path = session.reference.replace('.zip', '/info.json');
     return await this.getStreamByPath(path, res);
   }
-
+*/
   @Get('all')
   async getAll(@Res({ passthrough: true }) res, @Query('id') id) {
     return await this.sessionService.all(0, 500);

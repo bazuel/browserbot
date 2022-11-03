@@ -27,8 +27,8 @@
     "zone.js": "~0.11.8"
   },
   "devDependencies": {
-    "@angular-devkit/build-angular": "^14.2.7",
-    "@angular/cli": "~14.1.3",
+    "@angular-devkit/build-angular": "^14.2.8",
+    "@angular/cli": "~14.2.8",
     "@angular/compiler-cli": "^14.2.8",
     "@browserbot/model": "link:..\\browserbot-model",
     "@types/jasmine": "~4.0.3",

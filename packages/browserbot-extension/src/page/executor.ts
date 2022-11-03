@@ -8,7 +8,7 @@ window.addEventListener('message', async (message) => {
     const domJson = monitors.dom.takeDomScreenshot();
     console.log(domJson);
     window.postMessage(
-      { type: 'screenshot-event', data: { domJson: domJson, title: document.title } },
+      { type: 'screenshot-event', data: { full: domJson, title: document.title } },
       '*'
     );
   }
