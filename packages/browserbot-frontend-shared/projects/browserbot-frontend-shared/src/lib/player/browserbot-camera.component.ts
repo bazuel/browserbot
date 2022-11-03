@@ -47,7 +47,14 @@ export class BrowserbotCameraComponent implements AfterViewInit {
 
   private player!: PlayerComponent;
 
+  @Output()
+  iframeChanged = new EventEmitter<{ iframe: HTMLIFrameElement }>();
+
   constructor() {}
+
+  ngOnChanges(): void {
+    if (this.domEvent) this.updatePlayerSession();
+  }
 
   async ngAfterViewInit() {
     if (this.domEvent) this.updatePlayerSession();
@@ -73,5 +80,8 @@ export class BrowserbotCameraComponent implements AfterViewInit {
     }
     //let domFullTimestamp = this.session.find(h => (h as BLDomEvent).full)!.timestamp
     this.player.setEvents([this.domEvent]);
+    this.iframeChanged.emit({
+      iframe: this.camera.nativeElement.querySelector("iframe")!,
+    });
   }
 }
