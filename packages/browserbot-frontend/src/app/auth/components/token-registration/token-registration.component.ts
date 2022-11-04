@@ -1,7 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { BBApiPermission, BBApiPermissionType } from '@browserbot/model';
 import { TokenRegistrationService } from '../../services/token-registration.service';
-import { TokenService } from '../../../shared/services/token.service';
 
 @Component({
   selector: 'bb-token-registration',
@@ -13,10 +12,7 @@ export class TokenRegistrationComponent implements OnInit {
   permissionSelected: BBApiPermissionType;
   token: string;
 
-  constructor(
-    private tokenRegistrationService: TokenRegistrationService,
-    private tokenService: TokenService
-  ) {}
+  constructor(private tokenRegistrationService: TokenRegistrationService) {}
 
   ngOnInit(): void {}
 
@@ -24,7 +20,6 @@ export class TokenRegistrationComponent implements OnInit {
     if (this.permissionSelected)
       this.tokenRegistrationService.generateToken(this.permissionSelected).then((token) => {
         this.token = token.apiToken;
-        this.tokenService.setApiToken(token.apiToken);
       });
   }
 }

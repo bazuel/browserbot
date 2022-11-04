@@ -176,7 +176,7 @@ export class UserController {
     return users.map((u) => ({ ...u, password: '' }));
   }
 
-  @Get('request-token-api-generation')
+  @Get('request-api-token-generation')
   @UseGuards(HasToken)
   async generateApiToken(
     @UserId() userId: BBUser['bb_userid'],
@@ -189,6 +189,14 @@ export class UserController {
     );
     await this.userService.updateUser({ bb_userid: userId, api_token: apiToken });
     return { apiToken };
+  }
+
+  @Get('get-api-token')
+  @UseGuards(HasToken)
+  async getApiToken(@UserId() userid: BBUser['bb_userid']) {
+    return await this.userService.findById(userid).then((user) => {
+      return { apiToken: user.api_token };
+    });
   }
 
   @Get('get-permissions')
